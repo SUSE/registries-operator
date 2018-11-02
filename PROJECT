@@ -1,0 +1,4 @@
+version: "1"
+domain: opensuse.org
+repo: github.com/kubic-project/registries-operator
+
