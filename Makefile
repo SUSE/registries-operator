@@ -72,6 +72,8 @@ CONTAINER_VOLUMES = \
 all: $(REGS_OPER_EXE)
 
 $(DEEPCOPY_DEPS):
+	@[ -n "${GOPATH}" ]     || ( echo "GOPATH not defined" ; exit 1 ; )
+	@[ -d "${GOPATH}/bin" ] || ( echo "${GOPATH}/bin does not exist" ; exit 1 ; )
 	@echo ">>> Getting deepcopy dependencies..."
 	-@$(GO_NOMOD) get -u k8s.io/apimachinery
 	-@$(GO_NOMOD) get -u k8s.io/api
@@ -79,7 +81,7 @@ $(DEEPCOPY_DEPS):
 # NOTE: deepcopy-gen doesn't support go1.11's modules, so we must 'go get' it
 $(DEEPCOPY_GENERATOR): $(DEEPCOPY_DEPS)
 	@echo ">>> Getting deepcopy-gen (for $(DEEPCOPY_GENERATOR))"
-	-@$(GO_NOMOD) get k8s.io/code-generator/cmd/deepcopy-gen
+	-@$(GO_NOMOD) get -u k8s.io/code-generator/cmd/deepcopy-gen
 
 define _CREATE_DEEPCOPY_TARGET
 $(1): $(DEEPCOPY_GENERATOR) $(shell grep -l "//go:generate" $(dir $1)*.go 2>/dev/null)
@@ -165,7 +167,7 @@ check: $(GOLINT)
 
 .PHONY: test
 test:
-	@go test -v $(SOURCE_DIRS_GO) -coverprofile cover.out
+	@go test -v $(SOURCES_DIRS_GO) -coverprofile cover.out
 
 .PHONY: check
 clean: docker-image-clean
