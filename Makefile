@@ -244,8 +244,8 @@ $(IMAGE_TAR_GZ):
 
 docker-image: $(IMAGE_TAR_GZ)
 docker-image-clean:
+	-[ -f $(IMAGE_TAR_GZ) ] && docker rmi $(IMAGE_NAME)
 	rm -f $(IMAGE_TAR_GZ)
-	-docker rmi $(IMAGE_NAME)
 
 
 #############################################################
