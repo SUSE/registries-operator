@@ -54,6 +54,7 @@ require (
 	k8s.io/client-go v0.0.0-20180806134042-1f13a808da65
 	k8s.io/code-generator v0.0.0-20181101090831-772c233fdd26 // indirect
 	k8s.io/gengo v0.0.0-20181019081622-7338e4bfd691 // indirect
+	k8s.io/klog v0.1.0
 	k8s.io/kube-openapi v0.0.0-20180928202339-9dfdf9be683f // indirect
 	k8s.io/kubernetes v1.11.3
 	k8s.io/utils v0.0.0-20180918230422-cd34563cd63c // indirect
