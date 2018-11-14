@@ -1,3 +1,6 @@
+
+[![CircleCI](https://circleci.com/gh/kubic-project/registries-operator/tree/master.svg?style=svg)](https://circleci.com/gh/kubic-project/registries-operator/tree/master)
+
 # Description
 
 A Docker registries operator for Kubernetes, developed inside the

@@ -31,4 +31,4 @@ jobs:
           destination: raw-test-output
 
       - store_test_results: # Upload test results for display in Test Summary
-path: /tmp/test-results
+          path: /tmp/test-results
