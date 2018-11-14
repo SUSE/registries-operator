@@ -150,7 +150,7 @@ $(REGS_OPER_EXE): $(REGS_OPER_MAIN_SRCS) $(DEEPCOPY_GENERATED_FILES)
 .PHONY: fmt
 fmt: $(REGS_OPER_SRCS)
 	@echo ">>> Reformatting code"
-	@go fmt $(SOURCES_DIRS_GO)
+	@$(GO) fmt $(SOURCES_DIRS_GO)
 
 .PHONY: simplify
 simplify:
@@ -162,12 +162,12 @@ $(GOLINT):
 .PHONY: check
 check: $(GOLINT)
 	@test -z $(shell gofmt -l $(REGS_OPER_MAIN) | tee /dev/stderr) || echo "[WARN] Fix formatting issues with 'make fmt'"
-	@for d in $$(go list ./... | grep -v /vendor/); do golint $${d}; done
+	@for d in $$($(GO) list ./... | grep -v /vendor/); do $(GOLINT) $${d}; done
 	@$(GO) tool vet ${REGS_OPER_SRCS}
 
 .PHONY: test
 test:
-	@go test -v $(SOURCES_DIRS_GO) -coverprofile cover.out
+	@$(GO) test -v $(SOURCES_DIRS_GO) -coverprofile cover.out
 
 .PHONY: check
 clean: docker-image-clean
