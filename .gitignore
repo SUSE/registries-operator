@@ -18,3 +18,5 @@ robots.txt*
 config/crds/*.yaml
 
 Makefile.local
+# coverage files
+cover.out
