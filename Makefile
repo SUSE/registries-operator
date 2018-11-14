@@ -1,17 +1,25 @@
 SOURCES_DIRS      = cmd pkg
 SOURCES_DIRS_GO   = ./pkg/... ./cmd/...
-SOURCES_APIPS_DIR = ./pkg/apis/kubic
+SOURCES_API_DIR   = ./pkg/apis/kubic
 
 GO         := GO111MODULE=on GO15VENDOREXPERIMENT=1 go
 GO_NOMOD   := GO111MODULE=off go
 GO_VERSION := $(shell $(GO) version | sed -e 's/^[^0-9.]*\([0-9.]*\).*/\1/')
 
-# go source files, ignore vendor directory
-REGS_OPER_SRCS      = $(shell find $(SOURCES_DIRS) -type f -name '*.go' -not -path "*generated*")
-REGS_OPER_MAIN_SRCS = $(shell find $(SOURCES_DIRS) -type f -name '*.go' -not -path "*_test.go")
+GOLINT     := ${GOPATH}/bin/golint
 
-REGS_OPER_GEN_SRCS       = $(shell grep -l -r "//go:generate" $(SOURCES_DIRS))
-REGS_OPER_CRD_TYPES_SRCS = $(shell find $(SOURCES_APIPS_DIR) -type f -name "*_types.go")
+# go source files, ignore vendor directory
+REGS_OPER_SRCS           = $(shell find $(SOURCES_DIRS) -type f -name '*.go' -not -path "*generated*")
+REGS_OPER_MAIN_SRCS      = $(shell find $(SOURCES_DIRS) -type f -name '*.go' -not -path "*_test.go")
+REGS_OPER_GEN_SRCS       = $(shell grep -l -r "//go:generate" $(SOURCES_DIRS) 2>/dev/null)
+REGS_OPER_CRD_TYPES_SRCS = $(shell find $(SOURCES_API_DIR) -type f -name "*_types.go")
+
+DEEPCOPY_FILENAME := zz_generated.deepcopy.go
+
+# the list of all the deepcopy.go files we are going to generate
+DEEPCOPY_GENERATED_FILES := $(foreach file,$(REGS_OPER_GEN_SRCS),$(dir $(file))$(DEEPCOPY_FILENAME))
+DEEPCOPY_GENERATOR       := ${GOPATH}/bin/deepcopy-gen
+DEEPCOPY_DEPS            := ${GOPATH}/src/k8s.io/apimachinery ${GOPATH}/src/k8s.io/api
 
 REGS_OPER_EXE  = cmd/registries-operator/registries-operator
 REGS_OPER_MAIN = cmd/registries-operator/main.go
@@ -63,15 +71,30 @@ CONTAINER_VOLUMES = \
 
 all: $(REGS_OPER_EXE)
 
-deps: go.mod
-	@echo ">>> Checking vendored deps..."
-	@$(GO) mod download
+$(DEEPCOPY_DEPS):
+	@echo ">>> Getting deepcopy dependencies..."
+	-@$(GO_NOMOD) get -u k8s.io/apimachinery
+	-@$(GO_NOMOD) get -u k8s.io/api
 
-generate: $(REGS_OPER_GEN_SRCS)
-	@echo ">>> Getting deepcopy-gen..."
-	@$(GO_NOMOD) get k8s.io/code-generator/cmd/deepcopy-gen
-	@echo ">>> Generating files..."
-	@$(GO) generate -x $(SOURCES_DIRS_GO)
+# NOTE: deepcopy-gen doesn't support go1.11's modules, so we must 'go get' it
+$(DEEPCOPY_GENERATOR): $(DEEPCOPY_DEPS)
+	@echo ">>> Getting deepcopy-gen (for $(DEEPCOPY_GENERATOR))"
+	-@$(GO_NOMOD) get k8s.io/code-generator/cmd/deepcopy-gen
+
+define _CREATE_DEEPCOPY_TARGET
+$(1): $(DEEPCOPY_GENERATOR) $(shell grep -l "//go:generate" $(dir $1)*.go 2>/dev/null)
+	@echo ">>> Updating deepcopy files in $(dir $1)"
+	$(GO) generate -x $(shell grep -l "//go:generate" $(dir $1)*.go 2>/dev/null)
+endef
+
+# Use macro to generate targets for all the DEEPCOPY_GENERATED_FILES files
+$(foreach file,$(DEEPCOPY_GENERATED_FILES),$(eval $(call _CREATE_DEEPCOPY_TARGET,$(file))))
+
+clean-generated:
+	rm -f $(DEEPCOPY_GENERATED_FILES)
+
+generate: $(DEEPCOPY_GENERATOR) $(DEEPCOPY_GENERATED_FILES)
+.PHONY: generate
 
 # Create a new CRD object XXXXX with:
 #    kubebuilder create api --namespaced=false --group kubic --version v1beta1 --kind XXXXX
@@ -118,7 +141,7 @@ $(REGS_DEPLOY): kustomize-exe manifests-crd
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: $(REGS_DEPLOY)
 
-$(REGS_OPER_EXE): $(REGS_OPER_MAIN_SRCS) deps generate
+$(REGS_OPER_EXE): $(REGS_OPER_MAIN_SRCS) $(DEEPCOPY_GENERATED_FILES)
 	@echo ">>> Building $(REGS_OPER_EXE)..."
 	$(GO) build $(REGS_OPER_LDFLAGS) -o $(REGS_OPER_EXE) $(REGS_OPER_MAIN)
 
@@ -131,8 +154,11 @@ fmt: $(REGS_OPER_SRCS)
 simplify:
 	@gofmt -s -l -w $(REGS_OPER_SRCS)
 
+$(GOLINT):
+	-@$(GO_NOMOD) get golang.org/x/lint/golint
+
 .PHONY: check
-check:
+check: $(GOLINT)
 	@test -z $(shell gofmt -l $(REGS_OPER_MAIN) | tee /dev/stderr) || echo "[WARN] Fix formatting issues with 'make fmt'"
 	@for d in $$(go list ./... | grep -v /vendor/); do golint $${d}; done
 	@$(GO) tool vet ${REGS_OPER_SRCS}
