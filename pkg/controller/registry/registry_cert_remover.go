@@ -70,7 +70,7 @@ func (r *ReconcileRegistry) reconcileCertMissing(instance *kubicv1beta1.Registry
 
 	if len(jobs) == 0 {
 		if len(instance.Status.Certificate.CurrentHash) > 0 && instance.Status.Certificate.NumNodes != 0 {
-			glog.V(3).Infof("[kubic] %will start a removal Job")
+			glog.V(3).Infof("[kubic] will start a removal Job")
 			mustRemove = true
 		}
 	} else {
