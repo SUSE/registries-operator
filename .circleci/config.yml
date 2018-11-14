@@ -7,7 +7,7 @@ jobs:
       - image: circleci/golang
 
         # directory where steps are run. Path must conform to the Go Workspace requirements
-    working_directory: /go/src/github.com/kubic-project/kubic-init
+    working_directory: /go/src/github.com/kubic-project/registries-operator
 
     environment: # environment variables for the build itself
       TEST_RESULTS: /tmp/test-results # path to where test results will be saved
