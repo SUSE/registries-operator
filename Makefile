@@ -212,7 +212,7 @@ local-run: $(REGS_OPER_EXE) manifests
 	@echo ">>> Running $(REGS_OPER_EXE) as _root_"
 	$(REGS_OPER_EXE) manager \
 		-v $(VERBOSE_LEVEL) \
-		--kubeconfig /etc/kubernetes/admin.conf \
+		--kubeconfig $(KUBECONFIG) \
 		$(EXTRA_ARGS)
 
 docker-run: $(IMAGE_TAR_GZ)
