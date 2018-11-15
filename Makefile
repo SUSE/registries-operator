@@ -207,7 +207,7 @@ clean-local-deploy:
 # - Start a Deployment with the manager:
 #   make local-run EXTRA_ARGS="--"
 #
-local-run: $(REGS_OPER_EXE) manifests
+local-run: $(REGS_OPER_EXE)
 	[ -r $(KUBECONFIG) ] || $(SUDO_E) chmod 644 $(KUBECONFIG)
 	@echo ">>> Running $(REGS_OPER_EXE) as _root_"
 	$(REGS_OPER_EXE) manager \
