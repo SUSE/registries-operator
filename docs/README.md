@@ -1,6 +1,7 @@
-# Dex operator documentation
+# Registries operator documentation
 
 ## Table of Contents
 
-* [Configuration](dex.md)
+* [Configuration](reg.md)
+* [Development](devel.md)
 
