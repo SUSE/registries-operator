@@ -36,9 +36,9 @@ jobs:
           paths:
             - /go/pkg
 
-              #  - run:
-              # name: Execute unit-tests
-          #          command: make test
+      - run:
+          name: Execute unit-tests
+          command: make test
 
   build-docker-image:
     executor: golang-executor
@@ -49,7 +49,7 @@ jobs:
 
       - run:
           name: Build the Docker image
-          command: make clean docker-image
+          command: make clean _vendor-download docker-image
 
   tests-lint:
     executor: golang-executor

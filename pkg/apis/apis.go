@@ -15,6 +15,9 @@
  *
  */
 
+// Generate deepcopy for apis (and do not use modules: it makes it slow)
+//go:generate sh -c "GO111MODULE=on deepcopy-gen -O zz_generated.deepcopy -i ./... -h ../../hack/boilerplate.go.txt"
+
 // Package apis contains Kubernetes API groups.
 package apis
 
