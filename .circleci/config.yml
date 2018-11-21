@@ -16,8 +16,17 @@ jobs:
       - checkout # check out source code to working directory
       - run: mkdir -p $TEST_RESULTS # create the test results directory
    
-      - run: | 
-              make
+      - run:
+          name: Build project
+          command: make
+
+      - setup_remote_docker:
+          docker_layer_caching: true
+
+      - run:
+          name: Build the Docker image
+          command: make clean docker-image
+
       - run:
           name: Check golang style with gofmt, go vet and golint
           command: make check 
@@ -26,6 +35,7 @@ jobs:
           name: Run kubic-init unit-tests
           command: |
             make test 
+
       - store_artifacts: # Upload test summary for display in Artifacts
           path: /tmp/test-results
           destination: raw-test-output

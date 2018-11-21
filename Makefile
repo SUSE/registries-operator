@@ -172,7 +172,7 @@ test:
 .PHONY: check
 clean: docker-image-clean
 	rm -f $(REGS_OPER_EXE)
-	rm -rf `find . -name zz_generated.deepcopy.go`
+	rm -rf `find . -name zz_generated.deepcopy.go` go.sum
 
 #############################################################
 # Some simple run targets
