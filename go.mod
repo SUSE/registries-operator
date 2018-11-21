@@ -19,8 +19,6 @@ require (
 	github.com/imdario/mergo v0.3.6 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.5 // indirect
-	github.com/kubernetes/kubernetes v1.12.1
-	github.com/kubic-project/kubic-init v0.0.0-20181029092444-8266cfbf30df
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742 // indirect
@@ -35,7 +33,6 @@ require (
 	github.com/stevvooe/resumable v0.0.0-20180830230917-22b14a53ba50 // indirect
 	github.com/stretchr/testify v1.2.2 // indirect
 	github.com/ugorji/go v1.1.1 // indirect
-	github.com/yuroyoro/swalker v0.0.0-20160622113523-0a5950e9162f // indirect
 	go.uber.org/atomic v1.3.2 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.9.1 // indirect
@@ -44,7 +41,6 @@ require (
 	golang.org/x/oauth2 v0.0.0-20181003184128-c57b0facaced // indirect
 	golang.org/x/sys v0.0.0-20181005133103-4497e2df6f9e // indirect
 	golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2 // indirect
-	golang.org/x/tools v0.0.0-20181101071927-45ff765b4815 // indirect
 	google.golang.org/appengine v1.2.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	k8s.io/api v0.0.0-20180712090710-2d6f90ab1293
@@ -52,9 +48,6 @@ require (
 	k8s.io/apimachinery v0.0.0-20180621070125-103fd098999d
 	k8s.io/apiserver v0.0.0-20180808060109-1844acd6a035
 	k8s.io/client-go v0.0.0-20180806134042-1f13a808da65
-	k8s.io/code-generator v0.0.0-20181101090831-772c233fdd26 // indirect
-	k8s.io/gengo v0.0.0-20181019081622-7338e4bfd691 // indirect
-	k8s.io/klog v0.1.0
 	k8s.io/kube-openapi v0.0.0-20180928202339-9dfdf9be683f // indirect
 	k8s.io/kubernetes v1.11.3
 	k8s.io/utils v0.0.0-20180918230422-cd34563cd63c // indirect

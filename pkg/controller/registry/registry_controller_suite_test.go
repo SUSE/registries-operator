@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/kubic-project/registries-operator/pkg/apis"
+	"github.com/kubic-project/registries-operator/pkg/test"
 	"github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -35,18 +36,27 @@ import (
 var cfg *rest.Config
 
 func TestMain(m *testing.M) {
-	t := &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "config", "crds")},
-	}
-	apis.AddToScheme(scheme.Scheme)
 
-	var err error
-	if cfg, err = t.Start(); err != nil {
-		log.Fatal(err)
+	var t *envtest.Environment
+
+	if test.ShouldRunIntegrationSetupAndTeardown(m) {
+		t = &envtest.Environment{
+			CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "config", "crds")},
+		}
+		apis.AddToScheme(scheme.Scheme)
+
+		var err error
+		if cfg, err = t.Start(); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	code := m.Run()
-	t.Stop()
+
+	if test.ShouldRunIntegrationSetupAndTeardown(m) {
+		t.Stop()
+	}
+
 	os.Exit(code)
 }
 
