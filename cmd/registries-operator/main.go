@@ -30,6 +30,7 @@ import (
 	"github.com/spf13/pflag"
 	utilflag "k8s.io/apiserver/pkg/util/flag"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	kubeadmutil "k8s.io/kubernetes/cmd/kubeadm/app/util"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
