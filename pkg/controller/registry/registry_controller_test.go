@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	kubicv1beta1 "github.com/kubic-project/registries-operator/pkg/apis/kubic/v1beta1"
+	"github.com/kubic-project/registries-operator/pkg/test"
 )
 
 var c client.Client
@@ -42,6 +43,9 @@ var depKey = types.NamespacedName{Name: "foo-deployment", Namespace: "default"}
 const timeout = time.Second * 5
 
 func TestReconcile(t *testing.T) {
+
+	test.SkipUnlessIntegrationTesting(t)
+
 	g := gomega.NewGomegaWithT(t)
 	instance := &kubicv1beta1.Registry{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"}}
 

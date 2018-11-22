@@ -167,6 +167,10 @@ check: $(GOLINT)
 
 .PHONY: test
 test:
+	@$(GO) test -short -v $(SOURCES_DIRS_GO) -coverprofile cover.out
+
+.PHONY: integration
+integration: 
 	@$(GO) test -v $(SOURCES_DIRS_GO) -coverprofile cover.out
 
 .PHONY: check
