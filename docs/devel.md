@@ -27,9 +27,7 @@ and managing your Kubernetes cluster:
 ### ... in your local machine
 
 You can run the `registries-operator` container locally with a
-`make local-run`. This will:
+`make KUBECONFIG=my-kubeconfig local-run`. This will:
 
   * build the `registries-operator` image
-  * run it locally
-    * using the `kubeconfig` in `/etc/kubernetes/admin.conf`
-    * using the config files in [`../config`](`../config`)
+  * run it locally  using  `my-kubeconfig` to connect to the kubernetes cluster
