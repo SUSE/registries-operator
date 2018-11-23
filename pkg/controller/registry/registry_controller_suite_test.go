@@ -27,6 +27,7 @@ import (
 	"github.com/kubic-project/registries-operator/pkg/test"
 	"github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -39,9 +40,12 @@ func TestMain(m *testing.M) {
 
 	var t *envtest.Environment
 
+	useExistingCluster := os.Getenv("KUBECONFIG") != ""
+
 	if test.ShouldRunIntegrationSetupAndTeardown(m) {
 		t = &envtest.Environment{
-			CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "config", "crds")},
+			UseExistingCluster: useExistingCluster,
+			CRDDirectoryPaths:  []string{filepath.Join("..", "..", "..", "config", "crds")},
 		}
 		apis.AddToScheme(scheme.Scheme)
 

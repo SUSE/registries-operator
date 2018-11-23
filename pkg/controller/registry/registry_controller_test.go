@@ -23,7 +23,8 @@ import (
 
 	"github.com/onsi/gomega"
 	"golang.org/x/net/context"
-	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -37,17 +38,18 @@ import (
 
 var c client.Client
 
-var expectedRequest = reconcile.Request{NamespacedName: types.NamespacedName{Name: "foo", Namespace: "default"}}
-var depKey = types.NamespacedName{Name: "foo-deployment", Namespace: "default"}
+var expectedRequest = reconcile.Request{NamespacedName: types.NamespacedName{Name: "foo", Namespace: metav1.NamespaceSystem}}
 
-const timeout = time.Second * 5
+//TODO: reuse logic for naming from registry_cert_instaler.go to avoid hardcoding
+var jobKey = types.NamespacedName{Name: "kubic-registry-installer-foo-com-5000", Namespace: metav1.NamespaceSystem}
+
+const timeout = time.Second * 60 * 3
 
 func TestReconcile(t *testing.T) {
 
 	test.SkipUnlessIntegrationTesting(t)
 
 	g := gomega.NewGomegaWithT(t)
-	instance := &kubicv1beta1.Registry{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"}}
 
 	// Setup the Manager and Controller.  Wrap the Controller Reconcile function so it writes each request to a
 	// channel when it is finished.
@@ -59,29 +61,69 @@ func TestReconcile(t *testing.T) {
 	g.Expect(addRegController(mgr, recFn)).NotTo(gomega.HaveOccurred())
 	defer close(StartTestManager(mgr, g))
 
+	// Create Secret
+	secret, err := test.BuildSecretFromCert("foo-ca-crt", "foo.crt")
+
+	if err != nil {
+		t.Errorf("Error creating secret %v", err)
+	}
+
+	err = c.Create(context.TODO(), secret)
+
+	if apierrors.IsInvalid(err) {
+		t.Errorf("failed to create secret: %v", err)
+	}
+
 	// Create the Registry object and expect the Reconcile and Deployment to be created
+	instance, err := kubicv1beta1.GetTestRegistry("foo")
+	if err != nil {
+		t.Errorf("Error Getting Registry %v", err)
+	}
 	err = c.Create(context.TODO(), instance)
+
 	// The instance object may not be a valid object because it might be missing some required fields.
 	// Please modify the instance object by adding required fields and then remove the following if statement.
 	if apierrors.IsInvalid(err) {
-		t.Logf("failed to create object, got an invalid object error: %v", err)
-		return
+		t.Errorf("failed to create registry: %v", err)
 	}
 	g.Expect(err).NotTo(gomega.HaveOccurred())
-	defer c.Delete(context.TODO(), instance)
+
+	defer func() {
+
+		registryName := types.NamespacedName{Name: "foo"}
+		created := &kubicv1beta1.Registry{}
+
+		err0 := c.Get(context.TODO(), registryName, created)
+		if err0 == nil {
+			//Ensure the finalizers are removed to prevent delete to be
+			//deadlocked by failed operator
+			created.ObjectMeta.Finalizers = []string{}
+			c.Update(context.TODO(), created)
+
+			c.Delete(context.TODO(), instance)
+		}
+
+		c.Delete(context.TODO(), secret)
+
+		crdName := "registries.kubic.opensuse.org"
+		crdClient, err0 := clientset.NewForConfig(mgr.GetConfig())
+		err0 = crdClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(crdName, &metav1.DeleteOptions{})
+
+	}()
+
 	g.Eventually(requests, timeout).Should(gomega.Receive(gomega.Equal(expectedRequest)))
 
-	deploy := &appsv1.Deployment{}
-	g.Eventually(func() error { return c.Get(context.TODO(), depKey, deploy) }, timeout).
+	job := &batchv1.Job{}
+	g.Eventually(func() error { return c.Get(context.TODO(), jobKey, job) }, timeout).
 		Should(gomega.Succeed())
 
-	// Delete the Deployment and expect Reconcile to be called for Deployment deletion
-	g.Expect(c.Delete(context.TODO(), deploy)).NotTo(gomega.HaveOccurred())
+	// Delete the Job and expect Reconcile to be called for Job deletion
+	g.Expect(c.Delete(context.TODO(), job)).NotTo(gomega.HaveOccurred())
 	g.Eventually(requests, timeout).Should(gomega.Receive(gomega.Equal(expectedRequest)))
-	g.Eventually(func() error { return c.Get(context.TODO(), depKey, deploy) }, timeout).
+	g.Eventually(func() error { return c.Get(context.TODO(), jobKey, job) }, timeout).
 		Should(gomega.Succeed())
 
-	// Manually delete Deployment since GC isn't enabled in the test control plane
-	g.Expect(c.Delete(context.TODO(), deploy)).To(gomega.Succeed())
+	// Manually delete job since GC isn't enabled in the test control plane
+	g.Expect(c.Delete(context.TODO(), job)).To(gomega.Succeed())
 
 }
