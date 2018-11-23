@@ -1,6 +1,8 @@
-
 # the main binary
 cmd/registries-operator/registries-operator
+
+# coverage files
+cover.out
 
 # images
 *-operator-latest.tar.gz
@@ -9,14 +11,13 @@ cmd/registries-operator/registries-operator
 vendor/
 .idea
 
-robots.txt*
+# vendored deps, IDEs and other dirs
+!vendor/**/zz_generated.*
 
 # generated files
 *deepcopy.go
 *generated.go
-# config/rbac/*.yaml
-config/crds/*.yaml
+
+go.sum
 
 Makefile.local
-# coverage files
-cover.out
