@@ -88,7 +88,7 @@ func (registry Registry) GetCertificateSecret(r client.Client) (*v1.Secret, erro
 
 }
 
-// String returns Registry HOST:PORT formatted address
+// String returns registry HOST:PORT formatted address
 func (registry Registry) String() string {
 	return fmt.Sprintf("%s", registry.Spec.HostPort)
 }

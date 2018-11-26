@@ -15,7 +15,7 @@
  *
  */
 
-// Package test is defined skip the specific test if we are not use running in integration testing mode
+// Package test contains specific test utilities which can be used by operator
 package test
 
 import (
