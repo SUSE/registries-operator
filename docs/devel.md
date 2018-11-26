@@ -31,3 +31,19 @@ You can run the `registries-operator` container locally with a
 
   * build the `registries-operator` image
   * run it locally  using  `my-kubeconfig` to connect to the kubernetes cluster
+
+For running the operator locally you must ensure that it access the kubernetes
+api with privileges for mounting the /etc/docker host volume, like in the psp
+fragment below:
+
+```yaml
+apiVersion: extensions/v1beta1
+kind: PodSecurityPolicy
+spec:
+  volumes:
+    # Kubernetes Host Volume Types
+    - hostPath
+  allowedHostPaths:
+    - pathPrefix: /etc/docker
+```
+
