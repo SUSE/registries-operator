@@ -126,7 +126,7 @@ func getRunnerJobWithSecrets(cfg *runnerWithSecrets) (*batchv1.Job, error) {
 	jobCont0.VolumeMounts = []corev1.VolumeMount{}
 
 	for hostPort, secret := range cfg.Secrets {
-		name := kubicutil.SafeId(hostPort)
+		name := kubicutil.SafeID(hostPort)
 
 		newVolume := corev1.Volume{
 			Name: name,

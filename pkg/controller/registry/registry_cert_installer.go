@@ -76,7 +76,7 @@ func (r *ReconcileRegistry) reconcileCertPresent(registry *kubicv1beta1.Registry
 
 	// 3. Process all the Jobs that were launched from this controller
 	jobs, err := getAllJobsWithLabels(r, map[string]string{
-		jobInstallLabelHostPort: kubicutil.SafeId(registry.Spec.HostPort),
+		jobInstallLabelHostPort: kubicutil.SafeID(registry.Spec.HostPort),
 		jobInstallLabelHash:     specSecretHash,
 	})
 	if err != nil {
@@ -164,8 +164,8 @@ func (r *ReconcileRegistry) reconcileCertPresent(registry *kubicv1beta1.Registry
 func (r *ReconcileRegistry) installCertForRegistry(registry *kubicv1beta1.Registry, secret *corev1.Secret, numNodes int) error {
 	var err error
 
-	registryAddress := kubicutil.SafeId(registry.Spec.HostPort)
-	jobName := kubicutil.SafeId(jobInstallNamePrefix) + "-" + registryAddress
+	registryAddress := kubicutil.SafeID(registry.Spec.HostPort)
+	jobName := kubicutil.SafeID(jobInstallNamePrefix) + "-" + registryAddress
 
 	// note: docker cannot mount directories with colons (like "registry.suse.de:5000")
 	//       so we will use the path "/certs/this-registry/ca.crt"

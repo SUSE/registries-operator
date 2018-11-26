@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  */
+
+// Package test contains specific test utilities which can be used by operator
 package test
 
 import (

@@ -21,9 +21,9 @@ import (
 	"strings"
 )
 
-// SafeId returns a safe ID (for example, for using in YAML)
+// SafeID returns a safe ID (for example, for using in YAML)
 // ie, "Something:6000/ddd" becomes "something-6000-ddd"
-func SafeId(s string) string {
+func SafeID(s string) string {
 	replacer := strings.NewReplacer(" ", "-", ":", "-", "/", "-", ".", "-")
 	return replacer.Replace(strings.ToLower(s))
 }

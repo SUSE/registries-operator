@@ -60,7 +60,7 @@ func (r *ReconcileRegistry) reconcileCertMissing(instance *kubicv1beta1.Registry
 	secretHash := instance.Status.Certificate.CurrentHash
 
 	jobs, err := getAllJobsWithLabels(r, map[string]string{
-		jobRemoveLabelHostPort: kubicutil.SafeId(instance.Spec.HostPort),
+		jobRemoveLabelHostPort: kubicutil.SafeID(instance.Spec.HostPort),
 		jobRemoveLabelHash:     secretHash,
 	})
 	if err != nil {
@@ -123,8 +123,8 @@ func (r *ReconcileRegistry) reconcileCertMissing(instance *kubicv1beta1.Registry
 func (r *ReconcileRegistry) removeCertForRegistry(registry *kubicv1beta1.Registry, secretHash string, numNodes int) error {
 	var err error
 
-	registryAddress := kubicutil.SafeId(registry.Spec.HostPort)
-	jobName := kubicutil.SafeId(jobRemoveNamePrefix) + "-" + registryAddress
+	registryAddress := kubicutil.SafeID(registry.Spec.HostPort)
+	jobName := kubicutil.SafeID(jobRemoveNamePrefix) + "-" + registryAddress
 
 	dstDir := filepath.Join(dockerCertsDir, registry.Spec.HostPort)
 
