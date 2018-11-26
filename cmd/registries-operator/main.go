@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  */
+
+// Command main is a cli for this k8s operator
 package main
 
 import (
@@ -39,8 +41,10 @@ import (
 	regcfg "github.com/kubic-project/registries-operator/pkg/config"
 )
 
-// to be set from the build process
+// Version is set from the build process
 var Version string
+
+// Build is set from the build process
 var Build string
 
 // newCmdManager runs the manager

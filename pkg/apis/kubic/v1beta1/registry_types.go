@@ -46,7 +46,7 @@ type RegistryStatus struct {
 	Certificate RegistryCertificateStatus
 }
 
-// RegistryStatus defines the observed state of Registry
+// RegistryCertificateStatus defines the observed state of Registry
 type RegistryCertificateStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
@@ -73,7 +73,7 @@ type Registry struct {
 	Status RegistryStatus `json:"status,omitempty"`
 }
 
-// GetRegistryCert gets the certificate for a registry
+// GetCertificateSecret gets the certificate for a registry
 func (registry Registry) GetCertificateSecret(r client.Client) (*v1.Secret, error) {
 	if registry.Spec.Certificate == nil {
 		return nil, nil
@@ -88,8 +88,9 @@ func (registry Registry) GetCertificateSecret(r client.Client) (*v1.Secret, erro
 
 }
 
-func (r Registry) String() string {
-	return fmt.Sprintf("%s", r.Spec.HostPort)
+// String returns Registry HOST:PORT formatted address
+func (registry Registry) String() string {
+	return fmt.Sprintf("%s", registry.Spec.HostPort)
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

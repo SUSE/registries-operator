@@ -18,9 +18,9 @@
 package config
 
 var (
-	// A prefix for all the resources created by the operator
+	//DefaultPrefix for all the resources created by the operator
 	DefaultPrefix = "regsop"
 
-	// Default number of replicas for the Deployment
+	// DefaultDeployNumReplicas is the  number of replicas for the Deployment
 	DefaultDeployNumReplicas = 3
 )

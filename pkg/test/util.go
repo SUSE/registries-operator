@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  */
+
+// Package test is defined skip the specific test if we are not use running in integration testing mode
 package test
 
 import (
