@@ -95,9 +95,9 @@ func newCmdManager(out io.Writer) *cobra.Command {
 func newCmdVersion(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
-		Short: "Print the version of kubic-init",
+		Short: "Print the version of registries-operator",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Fprintf(out, "kubic-init version: %s (build: %s)", Version, Build)
+			fmt.Fprintf(out, "registries-operator version: %s (build: %s)\n", Version, Build)
 		},
 	}
 	cmd.Flags().StringP("output", "o", "", "Output format; available options are 'yaml', 'json' and 'short'")
