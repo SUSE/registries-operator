@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"k8s.io/apimachinery/pkg/types"
 
 	kubicv1beta1 "github.com/kubic-project/registries-operator/pkg/apis/kubic/v1beta1"
 )
@@ -43,8 +44,11 @@ const (
 	// the registries controller name
 	regsControllerName = "KubicRegistriesController"
 
-	// certificates directory
+	// certificates directory for Docker
 	dockerCertsDir = "/etc/docker/certs.d/"
+
+	// certificates directory for podman
+	podmanCertsDir = "/etc/containers/certs.d/"
 )
 
 var (
@@ -137,21 +141,23 @@ type ReconcileRegistry struct {
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kubic.opensuse.org,resources=registries,verbs=get;list;watch;create;update;patch;delete
 func (r *ReconcileRegistry) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	glog.V(5).Infof("[kubic] trying to reconcile %s", request.NamespacedName)
+	glog.V(5).Infof("[kubic] trying to reconcile registry %s", request.Name)
 
 	// Fetch the Registry instance
 	registry := &kubicv1beta1.Registry{}
 	ctx := context.Background()
-	if err := r.Get(ctx, request.NamespacedName, registry); err != nil {
+	// registries are not namespaced, so use only the Name as the search key
+	if err := r.Get(ctx, types.NamespacedName{ Name: request.Name }, registry); err != nil {
 		if apierrors.IsNotFound(err) {
 			// Object not found, return.  Created objects are automatically garbage collected.
 			// For additional cleanup logic use finalizers.
-			glog.V(3).Infof("[kubic] %s not found (%s)... ignoring", request.NamespacedName, err)
+			glog.V(3).Infof("[kubic] %s not found (%s)... ignoring", request.Name, err)
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
+	glog.V(3).Infof("[kubic] found %s", request.NamespacedName)
 
 	// Get the list of nodes in the cluster
 	curNodes, err := getAllNodes(r)

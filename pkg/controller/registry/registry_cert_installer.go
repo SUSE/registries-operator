@@ -171,14 +171,23 @@ func (r *ReconcileRegistry) installCertForRegistry(registry *kubicv1beta1.Regist
 	//       so we will use the path "/certs/this-registry/ca.crt"
 	registryDir := "this-registry"
 	srcDir := filepath.Join(jobSecretsDir, registryDir)
-	dstDir := filepath.Join(dockerCertsDir, registry.Spec.HostPort)
+	dockerDstDir := filepath.Join(dockerCertsDir, registry.Spec.HostPort)
+	podmanDstDir := filepath.Join(podmanCertsDir, registry.Spec.HostPort)
 
+	// commands executed for installing the certificate for Docker and Podman
 	commands := []string{
-		fmt.Sprintf("echo Removing %s", dstDir),
-		fmt.Sprintf("[ -d '%s' ] && rm -rf '%s'", dstDir, dstDir),
-		fmt.Sprintf("mkdir -p '%s'", dstDir),
-		fmt.Sprintf("echo Copying %s/ca.crt to %s/ ...", srcDir, dstDir),
-		fmt.Sprintf("cp '%s/ca.crt' '%s/'", srcDir, dstDir),
+		fmt.Sprintf("echo Removing %s", dockerDstDir),
+		fmt.Sprintf("[ -d '%s' ] && rm -rf '%s'", dockerDstDir, dockerDstDir),
+		fmt.Sprintf("mkdir -p '%s'", dockerDstDir),
+		fmt.Sprintf("echo Copying %s/ca.crt to %s/ ...", srcDir, dockerDstDir),
+		fmt.Sprintf("cp '%s/ca.crt' '%s/'", srcDir, dockerDstDir),
+
+		fmt.Sprintf("echo Removing %s", podmanDstDir),
+		fmt.Sprintf("[ -d '%s' ] && rm -rf '%s'", podmanDstDir, podmanDstDir),
+		fmt.Sprintf("mkdir -p '%s'", podmanDstDir),
+		fmt.Sprintf("echo Copying %s/ca.crt to %s/ ...", srcDir, podmanDstDir),
+		fmt.Sprintf("cp '%s/ca.crt' '%s/'", srcDir, podmanDstDir),
+
 		fmt.Sprintf("echo Done"),
 	}
 
@@ -196,7 +205,8 @@ func (r *ReconcileRegistry) installCertForRegistry(registry *kubicv1beta1.Regist
 			jobInstallLabelHash:     getSecretHash(secret),
 		},
 		HostPaths: []string{
-			"/etc/docker", // mount this directory, so we can copy to the "certs.d" subdir
+			"/etc/docker",
+			"/etc/containers",
 		},
 		AntiAffinity: map[string]string{
 			jobInstallLabelHostPort: registryAddress,
