@@ -5,6 +5,10 @@ SOURCES_API_DIR   = ./pkg/apis/kubic
 GO         := GO111MODULE=on GO15VENDOREXPERIMENT=1 go
 GO_NOMOD   := GO111MODULE=off go
 GO_VERSION := $(shell $(GO) version | sed -e 's/^[^0-9.]*\([0-9.]*\).*/\1/')
+GO_VERSION_MAJ := $(shell echo $(GO_VERSION) | cut -f1 -d'.')
+GO_VERSION_MIN := $(shell echo $(GO_VERSION) | cut -f2 -d'.')
+
+
 
 # go source files, ignore vendor directory
 REGS_OPER_SRCS           = $(shell find $(SOURCES_DIRS) -type f -name '*.go' -not -path "*generated*")
@@ -186,7 +190,7 @@ generate: $(REGS_OPER_GEN_SRCS) deepcopy-deps
 	 @echo ">>> Generating files..."
 	 @$(GO) generate -x $(SOURCES_DIRS_GO)
 
-$(REGS_OPER_EXE): $(REGS_OPER_MAIN_SRCS) generate
+$(REGS_OPER_EXE): $(REGS_OPER_MAIN_SRCS) go-version-check generate
 	 @echo ">>> Building $(REGS_OPER_EXE)..."
 	 $(GO) build $(REGS_OPER_LDFLAGS) -o $(REGS_OPER_EXE) $(REGS_OPER_MAIN)
 
@@ -232,5 +236,9 @@ _vendor-download:
 #############################################################
 # Other stuff
 #############################################################
+go-version-check:
+	@[ $(GO_VERSION_MAJ) -ge 2 ] || \
+	 [ $(GO_VERSION_MAJ) -eq 1 -a $(GO_VERSION_MIN) -ge 11 ] || (echo "FATAL: Go version:$(GO_VERSION) does not support modules" ; exit 1 ; )
+
 
 -include Makefile.local
