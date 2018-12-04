@@ -126,11 +126,14 @@ func (r *ReconcileRegistry) removeCertForRegistry(registry *kubicv1beta1.Registr
 	registryAddress := kubicutil.SafeID(registry.Spec.HostPort)
 	jobName := kubicutil.SafeID(jobRemoveNamePrefix) + "-" + registryAddress
 
-	dstDir := filepath.Join(dockerCertsDir, registry.Spec.HostPort)
+	dockerDstDir := filepath.Join(dockerCertsDir, registry.Spec.HostPort)
+	podmanDstDir := filepath.Join(podmanCertsDir, registry.Spec.HostPort)
 
 	commands := []string{
-		fmt.Sprintf("echo Removing %s", dstDir),
-		fmt.Sprintf("rm -rf '%s'", dstDir),
+		fmt.Sprintf("echo Removing %s", dockerDstDir),
+		fmt.Sprintf("rm -rf '%s'", dockerDstDir),
+		fmt.Sprintf("echo Removing %s", podmanDstDir),
+		fmt.Sprintf("rm -rf '%s'", podmanDstDir),
 	}
 
 	glog.V(3).Infof("[kubic] generating Job '%s'", jobName)
@@ -144,7 +147,8 @@ func (r *ReconcileRegistry) removeCertForRegistry(registry *kubicv1beta1.Registr
 			jobRemoveLabelHash:     secretHash,
 		},
 		HostPaths: []string{
-			"/etc/docker", // mount this directory, so we can copy to the "certs.d" subdir
+			"/etc/docker",
+			"/etc/containers",
 		},
 		AntiAffinity: map[string]string{
 			jobInstallLabelHostPort: registryAddress,
