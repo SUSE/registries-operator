@@ -4,7 +4,7 @@
 # faster for development)
 #
 
-FROM opensuse:tumbleweed as builder
+FROM opensuse/leap:15.0 as builder
 
 ARG BUILD_DIR="/go/src/github.com/kubic-project/registries-operator"
 
@@ -13,7 +13,10 @@ ARG BUILD_DIR="/go/src/github.com/kubic-project/registries-operator"
 ADD . $BUILD_DIR
 
 WORKDIR $BUILD_DIR
-RUN zypper in -y make git go1.11
+RUN zypper ar https://download.opensuse.org/repositories/devel:/languages:/go/openSUSE_Leap_15.0/devel:languages:go.repo
+RUN zypper --non-interactive --no-gpg-checks ref
+RUN zypper in -y make git go
+RUN go version
 
 ENV GOPATH="/go"
 ENV GOBIN="/go/bin"
@@ -26,7 +29,7 @@ RUN make -C $BUILD_DIR all
 ####################
 # final stage
 ####################
-FROM opensuse:tumbleweed
+FROM opensuse/leap:15.0
 
 ARG BUILD_DIR="/go/src/github.com/kubic-project/registries-operator"
 ARG BUILT_EXE="cmd/registries-operator/registries-operator"
