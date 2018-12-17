@@ -10,7 +10,7 @@ A Docker registries operator for Kubernetes, developed inside the
 
 * Automatic installation of registries certificates based on
 some [CRD](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)s.
- 
+
 # Current status
 
 **Alpha**: we are still adding features and fixing many bugs...
@@ -29,11 +29,11 @@ Before we have a functional POC we need to implement:
     ```
     kubectl apply -f https://raw.githubusercontent.com/kubic-project/registries-operator/master/deployments/registries-operator-full.yaml
     ```
-    
+
 * once the operator is running, store the certificate for your registry in a _Secret_ with:
 
     ```
-    kubectl create secret generic suse-ca-crt --from-file=ca.crt=/etc/pki/trust/anchors/SUSE_CaaSP_CA.crt
+    kubectl create secret generic suse-ca-crt --from-file=ca.crt=/etc/pki/trust/anchors/SUSE_CaaSP_CA.crt -n kube-system
     ```
 
   where `/etc/pki/trust/anchors/SUSE_CaaSP_CA.crt` is the certificate and `suse-ca-crt` is the _Secret_.
@@ -53,8 +53,8 @@ Before we have a functional POC we need to implement:
       certificate:
         name: suse-ca-crt
         namespace: kube-system
-    ``` 
-    
+    ```
+
     then you can load it with `kubectl apply -f registry.yaml`.
 
 * once this is done, the `suse-ca-crt` should automatically appear in all

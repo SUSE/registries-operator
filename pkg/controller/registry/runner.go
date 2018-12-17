@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kubic-project/registries-operator/pkg/config"
 	kubicutil "github.com/kubic-project/registries-operator/pkg/util"
 )
 
@@ -48,7 +49,8 @@ var (
 			//Completions: 0,  // to be set
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
-					RestartPolicy: corev1.RestartPolicyNever,
+					RestartPolicy:      corev1.RestartPolicyNever,
+					ServiceAccountName: config.JobServiceAccountName,
 					Tolerations: []corev1.Toleration{
 						{
 							Key:      "node-role.kubernetes.io/master",
