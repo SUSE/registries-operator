@@ -18,46 +18,74 @@
 package v1beta1
 
 import (
-	"testing"
-
-	"github.com/kubic-project/registries-operator/pkg/test"
-	"github.com/onsi/gomega"
+	. "github.com/onsi/gomega"
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"github.com/kubic-project/registries-operator/pkg/test"
+	"testing"
 )
 
-func TestStorageRegistry(t *testing.T) {
+func TestGetCertificateFound(t *testing.T) {
 
-	test.SkipUnlessIntegrationTesting(t)
+	g := NewGomegaWithT(t)
 
-	key := types.NamespacedName{
-		Name:      "foo",
-		Namespace: "default",
+	c := fake.NewFakeClient()
+
+	r, err := GetTestRegistry("foo");
+
+	if err != nil  {
+		t.Errorf("Error Getting Registry %v", err)
 	}
-	created := &Registry{
+
+
+	expected, err := test.BuildSecretFromCert("foo-ca-crt","foo.crt")
+
+	if err != nil  {
+		t.Errorf("Error creating secret %v", err)
+	}
+
+	c.Create(context.TODO(), expected)
+
+	s, err := r.GetCertificateSecret(c)
+
+	g.Expect(s).To(Equal(expected))
+}
+
+func TestGetCertificateNotFound(t *testing.T) {
+
+	g := NewGomegaWithT(t)
+
+	c := fake.NewFakeClient()
+
+	r, err := GetTestRegistry("foo");
+	if err != nil  {
+		t.Errorf("Error Getting Registry %v", err)
+	}
+
+	_, err = r.GetCertificateSecret(c)
+
+	g.Expect(err).Should(HaveOccurred())
+}
+
+func TestGetCertificateWithoutSecret(t *testing.T) {
+
+	g := NewGomegaWithT(t)
+
+	c := fake.NewFakeClient()
+
+	r := Registry{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
-			Namespace: "default",
-		}}
-	g := gomega.NewGomegaWithT(t)
+			Name: "foo",
+			Namespace: metav1.NamespaceSystem,
+		},
+		Spec: RegistrySpec{
+			HostPort: "foo.com:5000",
+		},
+	}
 
-	// Test Create
-	fetched := &Registry{}
-	g.Expect(c.Create(context.TODO(), created)).NotTo(gomega.HaveOccurred())
+	s, err := r.GetCertificateSecret(c)
 
-	g.Expect(c.Get(context.TODO(), key, fetched)).NotTo(gomega.HaveOccurred())
-	g.Expect(fetched).To(gomega.Equal(created))
-
-	// Test Updating the Labels
-	updated := fetched.DeepCopy()
-	updated.Labels = map[string]string{"hello": "world"}
-	g.Expect(c.Update(context.TODO(), updated)).NotTo(gomega.HaveOccurred())
-
-	g.Expect(c.Get(context.TODO(), key, fetched)).NotTo(gomega.HaveOccurred())
-	g.Expect(fetched).To(gomega.Equal(updated))
-
-	// Test Delete
-	g.Expect(c.Delete(context.TODO(), fetched)).NotTo(gomega.HaveOccurred())
-	g.Expect(c.Get(context.TODO(), key, fetched)).To(gomega.HaveOccurred())
+	g.Expect(s).Should(BeNil())
+	g.Expect(err).ShouldNot(HaveOccurred())
 }

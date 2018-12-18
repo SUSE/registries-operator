@@ -20,6 +20,10 @@ package test
 
 import (
 	"flag"
+	"fmt"
+	"github.com/kubic-project/registries-operator/pkg/test/assets"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 )
 
@@ -37,3 +41,18 @@ func ShouldRunIntegrationSetupAndTeardown(m *testing.M) bool {
 	flag.Parse()
 	return !testing.Short()
 }
+
+//Returns a secret object build from a certificate stored in the certificates directory
+func BuildSecretFromCert(name string, certName string) (*corev1.Secret, error) {
+	cert, ok := assets.Certs[certName]
+	if !ok {
+		return &corev1.Secret{}, fmt.Errorf("Certificate  %s not found", certName)
+	}
+
+	secret := &corev1.Secret{
+		Type: corev1.SecretTypeOpaque, ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"}, Data: map[string][]byte{"ca-cert": cert}}
+
+	return secret, nil
+}
+
+
