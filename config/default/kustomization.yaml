@@ -19,6 +19,7 @@ namePrefix: registries-operator
 # markers ("---").
 resources:
 - ./rbac/admin_role_binding.yaml
+- ./rbac/job_role_binding.yaml
 - ../manager/manager.yaml
 
 #patches:

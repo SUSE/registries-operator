@@ -21,6 +21,9 @@ var (
 	// DefaultPrefix for all the resources created by the operator
 	DefaultPrefix = "regsop"
 
+	// JobServiceAccountName is the service account name for spawned jobs
+	JobServiceAccountName = "regs-jobs"
+
 	// DefaultDeployNumReplicas is the  number of replicas for the Deployment
 	DefaultDeployNumReplicas = 3
 )
