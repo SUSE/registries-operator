@@ -51,7 +51,7 @@ func TestMapSecretAllRegistries(t *testing.T) {
 	event:= handler.MapObject{}
 	requests := rm.Map(event)
 
-        g.Expect(requests).To(HaveLen(2))
+	g.Expect(requests).To(HaveLen(2))
 
 }
 
