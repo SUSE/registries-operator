@@ -50,10 +50,11 @@ const (
 	regsFinalizerName = "registry.finalizers.kubic.opensuse.org"
 )
 
+
 // reconcileCertMissing removes all the things created by the controller for a Registry
 // Ensure that delete implementation is idempotent and safe to invoke
 // multiple types for same object.
-func (r *ReconcileRegistry) reconcileCertMissing(instance *kubicv1beta1.Registry, nodes map[string]*corev1.Node) error {
+func (r *ReconcileRegistry) ReconcileCertMissing(instance *kubicv1beta1.Registry, nodes map[string]*corev1.Node) error {
 
 	mustRemove := false
 

@@ -15,7 +15,7 @@
  *
  */
 
-package fake 
+package fake
 
 import (
 	"context"
@@ -38,6 +38,7 @@ import (
  *
  * TODO: Remove this wrapper once the project is upgrded to a runtime v0.1.8 or up
  */
+
 type testClient struct {
 	fake   client.Client
 	scheme *runtime.Scheme
