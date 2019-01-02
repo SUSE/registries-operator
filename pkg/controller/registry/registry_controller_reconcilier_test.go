@@ -40,6 +40,7 @@ func NewFakeCertReconciler() *FakeCertReconciler {
 	return &FakeCertReconciler{false, false}
 }
 
+
 func newTestReconcileRegistry()  ReconcileRegistry {
 	return ReconcileRegistry{
 		fake.NewTestClient(),
@@ -76,7 +77,20 @@ func (r FakeCertReconciler) ReconcileCertNotCalled() bool {
 	return !r.reconcileMissing && !r.reconcilePresent
 }
 
-func TestReconcileRegistryNotFound(t *testing.T) {
+//checks if the registry is finalizing
+func (r *ReconcileRegistry)isFinalizing(registry string) (bool, error) {
+
+	instance:= &kubicv1beta1.Registry{}
+	err:= r.Get(context.TODO(),types.NamespacedName{Name: registry}, instance)
+
+	if err == nil {
+		return instance.ObjectMeta.Finalizers[0] == regsFinalizerName, nil
+	} else {
+		return false, err
+	}
+}
+
+func TesRegistryNotFound(t *testing.T) {
 
 	g := NewGomegaWithT(t)
 
@@ -92,7 +106,7 @@ func TestReconcileRegistryNotFound(t *testing.T) {
 
 }
 
-func TestReconcileRegistryFound(t *testing.T) {
+func TestRegistryFound(t *testing.T) {
 
 	g := NewGomegaWithT(t)
 
@@ -120,10 +134,11 @@ func TestReconcileRegistryFound(t *testing.T) {
 	//reconcile cert should be called
 	cr, _ :=r.certReconciler.(*FakeCertReconciler)
 	g.Expect(cr.ReconcileCertPresentCalled()).Should(Equal(true))
+	g.Expect(r.isFinalizing(fooReg.GetName())).Should(Equal(true))
 
 }
 
-func TestReconcileRegistryCertRemoved(t *testing.T) {
+func TestCertRemoved(t *testing.T) {
 
 	g := NewGomegaWithT(t)
 
@@ -155,7 +170,7 @@ func TestReconcileRegistryCertRemoved(t *testing.T) {
 
 }
 
-func TestReconcileRegistryWithoutCert(t *testing.T) {
+func TestRegistryWithoutCert(t *testing.T) {
 
 	g := NewGomegaWithT(t)
 
