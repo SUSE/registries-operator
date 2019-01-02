@@ -49,7 +49,7 @@ const (
 )
 
 // reconcileCertPresent reconciles the Certificate for this Registry
-func (r *ReconcileRegistry) reconcileCertPresent(registry *kubicv1beta1.Registry,
+func (r *ReconcileRegistry) ReconcileCertPresent(registry *kubicv1beta1.Registry,
 	curNodes map[string]*corev1.Node,
 	specSecret *corev1.Secret) (reconcile.Result, error) {
 

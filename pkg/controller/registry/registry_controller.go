@@ -57,11 +57,15 @@ var (
 
 // newRegistryReconcilier returns a new reconcile.Reconciler
 func newRegistryReconcilier(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileRegistry{
+	r:= &ReconcileRegistry{
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetRecorder(regsControllerName),
 		scheme:        mgr.GetScheme(),
 	}
+	//RegistryReconciler implements a default Cert Reconcilier
+	r.certReconciler = r
+
+	return r
 }
 
 // Add creates a new Registry Controller and adds it to the Manager with default RBAC.
@@ -131,7 +135,17 @@ type ReconcileRegistry struct {
 	client.Client
 	record.EventRecorder
 	scheme *runtime.Scheme
+	certReconciler CertReconciler
 }
+
+
+type CertReconciler interface {
+	ReconcileCertPresent(registry *kubicv1beta1.Registry,
+		curNodes map[string]*corev1.Node,
+		specSecret *corev1.Secret) (reconcile.Result, error) 
+	ReconcileCertMissing(instance *kubicv1beta1.Registry, nodes map[string]*corev1.Node) error
+}
+
 
 // Reconcile reads that state of the cluster for a Registry object and makes changes based
 // on the state read and what is in the Registry.Spec
@@ -174,7 +188,7 @@ func (r *ReconcileRegistry) Reconcile(request reconcile.Request) (reconcile.Resu
 
 	if finalizing {
 		if len(registry.Status.Certificate.CurrentHash) > 0 {
-			err = r.reconcileCertMissing(registry, curNodes)
+			err = r.certReconciler.ReconcileCertMissing(registry, curNodes)
 			if err != nil {
 				return reconcile.Result{}, err
 			}
@@ -186,7 +200,7 @@ func (r *ReconcileRegistry) Reconcile(request reconcile.Request) (reconcile.Resu
 				return reconcile.Result{}, err
 			}
 
-			rr, err := r.reconcileCertPresent(registry, curNodes, specSecret)
+			rr, err := r.certReconciler.ReconcileCertPresent(registry, curNodes, specSecret)
 			if err != nil {
 				return rr, err
 			}
@@ -194,7 +208,7 @@ func (r *ReconcileRegistry) Reconcile(request reconcile.Request) (reconcile.Resu
 			// trigger a certificate removal when Spec.Certificate=nil and Status.Certificate!=nil
 			if len(registry.Status.Certificate.CurrentHash) > 0 {
 				glog.V(3).Infof("[kubic] certificate has disappeared for %s: removing certificate", registry)
-				err = r.reconcileCertMissing(registry, curNodes)
+				err = r.certReconciler.ReconcileCertMissing(registry, curNodes)
 				if err != nil {
 					return reconcile.Result{}, err
 				}
