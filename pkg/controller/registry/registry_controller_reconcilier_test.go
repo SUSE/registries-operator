@@ -58,10 +58,22 @@ func (r *FakeCertReconciler) ReconcileCertPresent(registry *kubicv1beta1.Registr
 }
 
 
-func	(r *FakeCertReconciler) ReconcileCertMissing(instance *kubicv1beta1.Registry, nodes map[string]*corev1.Node) error {
+func (r *FakeCertReconciler) ReconcileCertMissing(instance *kubicv1beta1.Registry, nodes map[string]*corev1.Node) error {
 	r.reconcileMissing = true;
 	return  nil
 
+}
+
+func (r FakeCertReconciler) ReconcileCertPresentCalled() bool {
+	return r.reconcilePresent && !r.reconcileMissing
+}
+
+func (r FakeCertReconciler) ReconcileCertMissingCalled() bool {
+	return r.reconcileMissing && !r.reconcilePresent
+}
+
+func (r FakeCertReconciler) ReconcileCertNotCalled() bool {
+	return !r.reconcileMissing && !r.reconcilePresent
 }
 
 func TestReconcileRegistryNotFound(t *testing.T) {
@@ -76,7 +88,7 @@ func TestReconcileRegistryNotFound(t *testing.T) {
         g.Expect(res).To(Equal(reconcile.Result{}))
 	//neither of reconcile methods should be called
 	cr, _ :=r.certReconciler.(*FakeCertReconciler)
-	g.Expect(cr.reconcileMissing || cr.reconcilePresent).Should(Equal(false))
+	g.Expect(cr.ReconcileCertNotCalled()).Should(Equal(true))
 
 }
 
@@ -105,9 +117,9 @@ func TestReconcileRegistryFound(t *testing.T) {
 	res, _ := r.Reconcile(req)
 
         g.Expect(res).To(Equal(reconcile.Result{}))
-	//neither of reconcile methods should be called
+	//reconcile cert should be called
 	cr, _ :=r.certReconciler.(*FakeCertReconciler)
-	g.Expect(cr.reconcilePresent).Should(Equal(true))
+	g.Expect(cr.ReconcileCertPresentCalled()).Should(Equal(true))
 
 }
 
@@ -137,9 +149,9 @@ func TestReconcileRegistryCertRemoved(t *testing.T) {
 	res, _ := r.Reconcile(req)
 
         g.Expect(res).To(Equal(reconcile.Result{}))
-	//neither of reconcile methods should be called
+	//reconcile cert should be called
 	cr, _ :=r.certReconciler.(*FakeCertReconciler)
-	g.Expect(cr.reconcileMissing).Should(Equal(true))
+	g.Expect(cr.ReconcileCertMissingCalled()).Should(Equal(true))
 
 }
 
@@ -165,6 +177,5 @@ func TestReconcileRegistryWithoutCert(t *testing.T) {
         g.Expect(res).To(Equal(reconcile.Result{}))
 	//neither of reconcile methods should be called
 	cr, _ :=r.certReconciler.(*FakeCertReconciler)
-	g.Expect(cr.reconcileMissing).Should(Equal(false))
-
+	g.Expect(cr.ReconcileCertNotCalled()).Should(Equal(true))
 }
