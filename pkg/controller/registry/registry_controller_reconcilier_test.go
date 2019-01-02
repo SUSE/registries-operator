@@ -19,18 +19,17 @@ package registry
 
 import (
 	kubicv1beta1 "github.com/kubic-project/registries-operator/pkg/apis/kubic/v1beta1"
-	"k8s.io/client-go/kubernetes/scheme"
 	"github.com/kubic-project/registries-operator/pkg/test"
 	"github.com/kubic-project/registries-operator/pkg/test/fake"
-	"k8s.io/apimachinery/pkg/types"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"golang.org/x/net/context"
 	. "github.com/onsi/gomega"
-	"testing"
+	"golang.org/x/net/context"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"testing"
 )
-
 
 type FakeCertReconciler struct {
 	reconcileMissing bool
@@ -41,8 +40,7 @@ func NewFakeCertReconciler() *FakeCertReconciler {
 	return &FakeCertReconciler{false, false}
 }
 
-
-func newTestReconcileRegistry()  ReconcileRegistry {
+func newTestReconcileRegistry() ReconcileRegistry {
 	return ReconcileRegistry{
 		fake.NewTestClient(),
 		fake.NewTestRecorder(),
@@ -55,14 +53,13 @@ func (r *FakeCertReconciler) ReconcileCertPresent(registry *kubicv1beta1.Registr
 	curNodes map[string]*corev1.Node,
 	specSecret *corev1.Secret) (reconcile.Result, error) {
 
-	r.reconcilePresent = true;
-	return  reconcile.Result{}, nil
+	r.reconcilePresent = true
+	return reconcile.Result{}, nil
 }
 
-
 func (r *FakeCertReconciler) ReconcileCertMissing(instance *kubicv1beta1.Registry, nodes map[string]*corev1.Node) error {
-	r.reconcileMissing = true;
-	return  nil
+	r.reconcileMissing = true
+	return nil
 
 }
 
@@ -79,10 +76,10 @@ func (r FakeCertReconciler) ReconcileCertNotCalled() bool {
 }
 
 //checks if the registry is finalizing
-func (r *ReconcileRegistry)isFinalizing(registry string) (bool, error) {
+func (r *ReconcileRegistry) isFinalizing(registry string) (bool, error) {
 
-	instance:= &kubicv1beta1.Registry{}
-	err:= r.Get(context.TODO(),types.NamespacedName{Name: registry}, instance)
+	instance := &kubicv1beta1.Registry{}
+	err := r.Get(context.TODO(), types.NamespacedName{Name: registry}, instance)
 
 	if err == nil {
 		return instance.ObjectMeta.Finalizers[0] == regsFinalizerName, nil
@@ -97,12 +94,12 @@ func TesRegistryNotFound(t *testing.T) {
 
 	r := newTestReconcileRegistry()
 
-	req := reconcile.Request{types.NamespacedName{Name: "TestRegistry",Namespace: ""}}
+	req := reconcile.Request{types.NamespacedName{Name: "TestRegistry", Namespace: ""}}
 	res, _ := r.Reconcile(req)
 
-        g.Expect(res).To(Equal(reconcile.Result{}))
+	g.Expect(res).To(Equal(reconcile.Result{}))
 	//neither of reconcile methods should be called
-	cr, _ :=r.certReconciler.(*FakeCertReconciler)
+	cr, _ := r.certReconciler.(*FakeCertReconciler)
 	g.Expect(cr.ReconcileCertNotCalled()).Should(Equal(true))
 
 }
@@ -119,7 +116,7 @@ func TestRegistryFinalizing(t *testing.T) {
 		t.Errorf("Error creating secret %v", err)
 	}
 
-	fooReg, err :=kubicv1beta1.GetTestRegistry("foo")
+	fooReg, err := kubicv1beta1.GetTestRegistry("foo")
 	if err != nil {
 		t.Errorf("Error Getting Registry %v", err)
 	}
@@ -132,14 +129,14 @@ func TestRegistryFinalizing(t *testing.T) {
 
 	c := r.Client
 	c.Create(context.TODO(), fooSec)
-	c.Create(context.TODO(),fooReg)
+	c.Create(context.TODO(), fooReg)
 
-	req := reconcile.Request{types.NamespacedName{Name: fooReg.Name,Namespace: fooReg.Namespace}}
+	req := reconcile.Request{types.NamespacedName{Name: fooReg.Name, Namespace: fooReg.Namespace}}
 	res, _ := r.Reconcile(req)
 
-        g.Expect(res).To(Equal(reconcile.Result{}))
+	g.Expect(res).To(Equal(reconcile.Result{}))
 	//reconcile cert should be called
-	cr, _ :=r.certReconciler.(*FakeCertReconciler)
+	cr, _ := r.certReconciler.(*FakeCertReconciler)
 	g.Expect(cr.ReconcileCertMissingCalled()).Should(Equal(true))
 
 }
@@ -156,21 +153,21 @@ func TestRegistryFound(t *testing.T) {
 		t.Errorf("Error creating secret %v", err)
 	}
 
-	fooReg, err :=kubicv1beta1.GetTestRegistry("foo")
+	fooReg, err := kubicv1beta1.GetTestRegistry("foo")
 	if err != nil {
 		t.Errorf("Error Getting Registry %v", err)
 	}
 
 	c := r.Client
 	c.Create(context.TODO(), fooSec)
-	c.Create(context.TODO(),fooReg)
+	c.Create(context.TODO(), fooReg)
 
-	req := reconcile.Request{types.NamespacedName{Name: fooReg.Name,Namespace: fooReg.Namespace}}
+	req := reconcile.Request{types.NamespacedName{Name: fooReg.Name, Namespace: fooReg.Namespace}}
 	res, _ := r.Reconcile(req)
 
-        g.Expect(res).To(Equal(reconcile.Result{}))
+	g.Expect(res).To(Equal(reconcile.Result{}))
 	//reconcile cert should be called
-	cr, _ :=r.certReconciler.(*FakeCertReconciler)
+	cr, _ := r.certReconciler.(*FakeCertReconciler)
 	g.Expect(cr.ReconcileCertPresentCalled()).Should(Equal(true))
 	g.Expect(r.isFinalizing(fooReg.GetName())).Should(Equal(true))
 
@@ -182,7 +179,7 @@ func TestCertRemoved(t *testing.T) {
 
 	r := newTestReconcileRegistry()
 
-	fooReg, err :=kubicv1beta1.GetTestRegistry("foo")
+	fooReg, err := kubicv1beta1.GetTestRegistry("foo")
 	if err != nil {
 		t.Errorf("Error Getting Registry %v", err)
 	}
@@ -196,14 +193,14 @@ func TestCertRemoved(t *testing.T) {
 	fooReg.Spec.Certificate = nil
 
 	c := r.Client
-	c.Create(context.TODO(),fooReg)
+	c.Create(context.TODO(), fooReg)
 
-	req := reconcile.Request{types.NamespacedName{Name: fooReg.Name,Namespace: fooReg.Namespace}}
+	req := reconcile.Request{types.NamespacedName{Name: fooReg.Name, Namespace: fooReg.Namespace}}
 	res, _ := r.Reconcile(req)
 
-        g.Expect(res).To(Equal(reconcile.Result{}))
+	g.Expect(res).To(Equal(reconcile.Result{}))
 	//reconcile cert should be called
-	cr, _ :=r.certReconciler.(*FakeCertReconciler)
+	cr, _ := r.certReconciler.(*FakeCertReconciler)
 	g.Expect(cr.ReconcileCertMissingCalled()).Should(Equal(true))
 
 }
@@ -214,7 +211,7 @@ func TestRegistryWithoutCert(t *testing.T) {
 
 	r := newTestReconcileRegistry()
 
-	fooReg, err :=kubicv1beta1.GetTestRegistry("foo")
+	fooReg, err := kubicv1beta1.GetTestRegistry("foo")
 	if err != nil {
 		t.Errorf("Error Getting Registry %v", err)
 	}
@@ -222,13 +219,13 @@ func TestRegistryWithoutCert(t *testing.T) {
 	fooReg.Spec.Certificate = nil
 
 	c := r.Client
-	c.Create(context.TODO(),fooReg)
+	c.Create(context.TODO(), fooReg)
 
-	req := reconcile.Request{types.NamespacedName{Name: fooReg.Name,Namespace: fooReg.Namespace}}
+	req := reconcile.Request{types.NamespacedName{Name: fooReg.Name, Namespace: fooReg.Namespace}}
 	res, _ := r.Reconcile(req)
 
-        g.Expect(res).To(Equal(reconcile.Result{}))
+	g.Expect(res).To(Equal(reconcile.Result{}))
 	//neither of reconcile methods should be called
-	cr, _ :=r.certReconciler.(*FakeCertReconciler)
+	cr, _ := r.certReconciler.(*FakeCertReconciler)
 	g.Expect(cr.ReconcileCertNotCalled()).Should(Equal(true))
 }
