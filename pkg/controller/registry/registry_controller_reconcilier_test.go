@@ -23,6 +23,7 @@ import (
 	"github.com/kubic-project/registries-operator/pkg/test"
 	"github.com/kubic-project/registries-operator/pkg/test/fake"
 	"k8s.io/apimachinery/pkg/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"golang.org/x/net/context"
 	. "github.com/onsi/gomega"
 	"testing"
@@ -103,6 +104,43 @@ func TesRegistryNotFound(t *testing.T) {
 	//neither of reconcile methods should be called
 	cr, _ :=r.certReconciler.(*FakeCertReconciler)
 	g.Expect(cr.ReconcileCertNotCalled()).Should(Equal(true))
+
+}
+
+func TestRegistryFinalizing(t *testing.T) {
+
+	g := NewGomegaWithT(t)
+
+	r := newTestReconcileRegistry()
+
+	fooSec, err := test.BuildSecretFromCert("foo-ca-crt", "foo.crt")
+
+	if err != nil {
+		t.Errorf("Error creating secret %v", err)
+	}
+
+	fooReg, err :=kubicv1beta1.GetTestRegistry("foo")
+	if err != nil {
+		t.Errorf("Error Getting Registry %v", err)
+	}
+	//simulate registry is being deleted
+	timestamp := metav1.Now()
+	fooReg.ObjectMeta.SetDeletionTimestamp(&timestamp)
+
+	//simulate the registry had a certificated deployed
+	fooReg.Status.Certificate.CurrentHash = getSecretHash(fooSec)
+
+	c := r.Client
+	c.Create(context.TODO(), fooSec)
+	c.Create(context.TODO(),fooReg)
+
+	req := reconcile.Request{types.NamespacedName{Name: fooReg.Name,Namespace: fooReg.Namespace}}
+	res, _ := r.Reconcile(req)
+
+        g.Expect(res).To(Equal(reconcile.Result{}))
+	//reconcile cert should be called
+	cr, _ :=r.certReconciler.(*FakeCertReconciler)
+	g.Expect(cr.ReconcileCertMissingCalled()).Should(Equal(true))
 
 }
 
