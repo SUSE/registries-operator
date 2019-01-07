@@ -76,7 +76,7 @@ local-run: $(REGS_OPER_EXE) $(KUBECONFIG)
 	$(REGS_OPER_EXE) manager \
 		-v $(VERBOSE_LEVEL) \
 		--kubeconfig $(KUBECONFIG) \
-		$(EXTRA_ARGS)
+		$(EXTRA_ARGS) &
 
 docker-run: $(IMAGE_TAR_GZ)
 	@echo ">>> Running $(IMAGE_NAME):latest in the local Docker"

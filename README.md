@@ -1,26 +1,22 @@
-
+![alpha](https://img.shields.io/badge/stability%3F-beta-yellow.svg)
 [![CircleCI](https://circleci.com/gh/kubic-project/registries-operator/tree/master.svg?style=svg)](https://circleci.com/gh/kubic-project/registries-operator/tree/master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/kubic-project/registries-operator)](https://goreportcard.com/report/github.com/kubic-project/registries-operator)
+
+## Registry operator:
+
+- [Description](#description)
+- [Quickstart](#quickstart)
+- [Devel](docs/devel.md)
+- [Additional Info](#extra)
 
 # Description
 
-A Docker registries operator for Kubernetes, developed inside the
-[Kubic](https://en.opensuse.org/Portal:Kubic) project.
+A Docker registries operator for Kubernetes, developed inside the [Kubic](https://en.opensuse.org/Portal:Kubic) project.
 
-# Features
+#### features:
 
 * Automatic installation of registries certificates based on
 some [CRD](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)s.
-
-# Current status
-
-**Alpha**: we are still adding features and fixing many bugs...
-
-## Roadmap/TODO
-
-Before we have a functional POC we need to implement:
-
-* [ ] More configuration options
-* [ ] Stability
 
 # Quick start
 
@@ -61,14 +57,11 @@ Before we have a functional POC we need to implement:
   the machines in your cluster, and all the Docker daemons in your cluster
   will be able to `pull` from that registry automatically.
 
-# Documentation
-
-* See the [current documentation](docs/README.md) for instructions.
+# Devel
 
 * See the [development documentation](docs/devel.md) if you intend to contribute to this project.
 
-
-# See also
+# Extra
 
 * the [registries-operator image](https://hub.docker.com/r/opensuse/registries-operator/) in the Docker Hub.
 * the [kubic-init](https://github.com/kubic-project/kubic-init) container, a container for
