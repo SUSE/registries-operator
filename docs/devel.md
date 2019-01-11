@@ -75,6 +75,15 @@ We assume that you have already have a running cluster with the `KUBECONFIG` env
 You can use `kind` for deploying a cluster or another method of your choice.
 
 
+* Integration Tests
+
+`make integration` will run the integration tests against a running cluster
+pointed by the KUBECONFIG environment variable. 
+
+The integration tests do not work against the test environment provided by
+kubebuilder as they require information about the cluster's nodes, which is
+not provided by kubebuilder.
+
 * e2e-tests: 
 `make e2e-tests` will run e2e tests. This tests are run also in CI with `kind`.
 
