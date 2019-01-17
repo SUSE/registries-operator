@@ -20,15 +20,14 @@ package registry
 import (
 	"testing"
 	"time"
-
 	"github.com/onsi/gomega"
 	"golang.org/x/net/context"
 	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -36,30 +35,18 @@ import (
 	"github.com/kubic-project/registries-operator/pkg/test"
 )
 
-var c client.Client
-
-var expectedRequest = reconcile.Request{NamespacedName: types.NamespacedName{Name: "foo", Namespace: metav1.NamespaceSystem}}
 
 //TODO: reuse logic for naming from registry_cert_instaler.go to avoid hardcoding
-var jobKey = types.NamespacedName{Name: "kubic-registry-installer-foo-com-5000", Namespace: metav1.NamespaceSystem}
+var jobKey = types.NamespacedName{
+	Name: "kubic-registry-installer-foo-com-5000",
+	Namespace: metav1.NamespaceSystem,
+}
 
 const timeout = time.Second * 60 * 3
 
-func TestReconcile(t *testing.T) {
+func testReconcileSetup(t *testing.T, mgr manager.Manager) {
 
-	test.SkipUnlessIntegrationTesting(t)
-
-	g := gomega.NewGomegaWithT(t)
-
-	// Setup the Manager and Controller.  Wrap the Controller Reconcile function so it writes each request to a
-	// channel when it is finished.
-	mgr, err := manager.New(cfg, manager.Options{})
-	g.Expect(err).NotTo(gomega.HaveOccurred())
-	c = mgr.GetClient()
-
-	recFn, requests := SetupTestReconcile(newRegistryReconcilier(mgr))
-	g.Expect(addRegController(mgr, recFn)).NotTo(gomega.HaveOccurred())
-	defer close(StartTestManager(mgr, g))
+	c := mgr.GetClient()
 
 	// Create Secret
 	secret, err := test.BuildSecretFromCert("foo-ca-crt", "foo.crt")
@@ -86,44 +73,101 @@ func TestReconcile(t *testing.T) {
 	if apierrors.IsInvalid(err) {
 		t.Errorf("failed to create registry: %v", err)
 	}
-	g.Expect(err).NotTo(gomega.HaveOccurred())
 
-	defer func() {
+}
 
-		registryName := types.NamespacedName{Name: "foo"}
-		created := &kubicv1beta1.Registry{}
 
-		err0 := c.Get(context.TODO(), registryName, created)
-		if err0 == nil {
-			//Ensure the finalizers are removed to prevent delete to be
-			//deadlocked by failed operator
-			created.ObjectMeta.Finalizers = []string{}
-			c.Update(context.TODO(), created)
+func testReconcileCleanup(t *testing.T, mgr manager.Manager){
 
-			c.Delete(context.TODO(), instance)
+	c := mgr.GetClient()
+
+	registryName := types.NamespacedName{Name: "foo"}
+	registry := &kubicv1beta1.Registry{}
+
+	err := c.Get(context.TODO(), registryName, registry)
+
+	//Get may fail if registry wasn't created, so ignore
+	if err == nil {
+		//Ensure the finalizers are removed to prevent delete to be
+		//deadlocked by failed operator
+		registry.ObjectMeta.Finalizers = []string{}
+		err  = c.Update(context.TODO(), registry)
+		if err != nil {
+		  t.Logf("Error updating registry %v", err)
+		} else {
+
+			err = c.Delete(context.TODO(), registry)
+			if err != nil {
+			  t.Logf("Error deleting registry %v", err)
+			}
 		}
+	}
 
-		c.Delete(context.TODO(), secret)
+	secretName := types.NamespacedName{
+		Name: "foo-ca-crt",
+		Namespace: metav1.NamespaceDefault,
+	}
+	secret := &corev1.Secret{}
+	err = c.Get(context.TODO(),secretName, secret)
+	//Get may fail if registry wasn't created, so ignore
+	if err == nil {
+		err = c.Delete(context.TODO(),secret)
+		if err != nil {
+		  t.Logf("Error deleting secret %v", err)
+		}
+	}
 
-		crdName := "registries.kubic.opensuse.org"
-		crdClient, err0 := clientset.NewForConfig(mgr.GetConfig())
-		err0 = crdClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(crdName, &metav1.DeleteOptions{})
+	crdName := "registries.kubic.opensuse.org"
+	crdClient, _ := clientset.NewForConfig(mgr.GetConfig())
 
-	}()
+	err = crdClient.ApiextensionsV1beta1().
+	                CustomResourceDefinitions().
+		        Delete(crdName, &metav1.DeleteOptions{})
 
-	g.Eventually(requests, timeout).Should(gomega.Receive(gomega.Equal(expectedRequest)))
+	if err != nil {
+		t.Logf("Error deleting Registry CRD: %v", err)
+	}
 
 	job := &batchv1.Job{}
-	g.Eventually(func() error { return c.Get(context.TODO(), jobKey, job) }, timeout).
-		Should(gomega.Succeed())
+	err = c.Get(context.TODO(), jobKey, job)
+	if err == nil {
+		err = c.Delete(context.TODO(),job)
+		if err != nil {
+		  t.Logf("Error deleting job %v", err)
+		}
+	}
 
-	// Delete the Job and expect Reconcile to be called for Job deletion
-	g.Expect(c.Delete(context.TODO(), job)).NotTo(gomega.HaveOccurred())
+}
+
+func TestReconcile(t *testing.T) {
+
+	test.SkipUnlessIntegrationTesting(t)
+	g := gomega.NewGomegaWithT(t)
+
+	mgr := SetupTestManager(t)
+	recFn, requests := SetupTestReconciler(newRegistryReconcilier(mgr))
+	err := addRegController(mgr, recFn)
+
+	if err != nil {
+		t.Errorf("Error adding Controller %v", err)
+	}
+
+	defer close(StartTestManager(t, mgr))
+
+	testReconcileSetup(t, mgr)
+
+	defer testReconcileCleanup(t, mgr)
+
+	expectedRequest := reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name: "foo", 
+			Namespace: metav1.NamespaceSystem,
+		},
+	}
 	g.Eventually(requests, timeout).Should(gomega.Receive(gomega.Equal(expectedRequest)))
-	g.Eventually(func() error { return c.Get(context.TODO(), jobKey, job) }, timeout).
-		Should(gomega.Succeed())
 
-	// Manually delete job since GC isn't enabled in the test control plane
-	g.Expect(c.Delete(context.TODO(), job)).To(gomega.Succeed())
+	c := mgr.GetClient()
+	job := &batchv1.Job{}
+	g.Eventually(func() error { return c.Get(context.TODO(), jobKey, job)}, timeout).Should(gomega.Succeed())
 
 }

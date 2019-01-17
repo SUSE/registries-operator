@@ -25,7 +25,6 @@ import (
 
 	"github.com/kubic-project/registries-operator/pkg/apis"
 	"github.com/kubic-project/registries-operator/pkg/test"
-	"github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	"k8s.io/client-go/rest"
@@ -66,21 +65,38 @@ func TestMain(m *testing.M) {
 
 // SetupTestReconcile returns a reconcile.Reconcile implementation that delegates to inner and
 // writes the request to requests after Reconcile is finished.
-func SetupTestReconcile(inner reconcile.Reconciler) (reconcile.Reconciler, chan reconcile.Request) {
+func SetupTestReconciler(inner reconcile.Reconciler) (reconcile.Reconciler, chan reconcile.Request) {
+
 	requests := make(chan reconcile.Request)
-	fn := reconcile.Func(func(req reconcile.Request) (reconcile.Result, error) {
+	recFn := reconcile.Func(func(req reconcile.Request) (reconcile.Result, error) {
 		result, err := inner.Reconcile(req)
 		requests <- req
 		return result, err
 	})
-	return fn, requests
+
+	return recFn, requests
+}
+
+func  SetupTestManager(t *testing.T) manager.Manager {
+
+	// Setup the Manager and Controller.  
+	mgr, err := manager.New(cfg, manager.Options{})
+
+	if err != nil {
+		t.Errorf("Error creating manager %v", err)
+	}
+
+	return  mgr
 }
 
 // StartTestManager adds recFn
-func StartTestManager(mgr manager.Manager, g *gomega.GomegaWithT) chan struct{} {
+func StartTestManager(t *testing.T, mgr manager.Manager) chan struct{} {
 	stop := make(chan struct{})
 	go func() {
-		g.Expect(mgr.Start(stop)).NotTo(gomega.HaveOccurred())
+		err := mgr.Start(stop)
+		if err != nil {
+			t.Errorf("Failed to start Manager: %v", err)
+		}
 	}()
 	return stop
 }

@@ -19,6 +19,7 @@
 package test
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/kubic-project/registries-operator/pkg/test/assets"
@@ -56,3 +57,11 @@ func BuildSecretFromCert(name string, certName string) (*corev1.Secret, error) {
 }
 
 
+// Prints Object is a readable format
+func PrettyPrint(v interface{}) (err error) {
+      b, err := json.MarshalIndent(v, "", "  ")
+      if err == nil {
+              fmt.Println(string(b))
+      }
+      return err
+}
