@@ -1,6 +1,7 @@
 ![alpha](https://img.shields.io/badge/stability%3F-beta-yellow.svg)
 [![CircleCI](https://circleci.com/gh/kubic-project/registries-operator/tree/master.svg?style=svg)](https://circleci.com/gh/kubic-project/registries-operator/tree/master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubic-project/registries-operator)](https://goreportcard.com/report/github.com/kubic-project/registries-operator)
+Kind-integration-test:![Integration-test](https://travis-ci.org/kubic-project/registries-operator.svg?branch=master)
 
 ## Registry operator:
 
