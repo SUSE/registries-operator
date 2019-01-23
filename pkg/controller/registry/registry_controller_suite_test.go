@@ -75,7 +75,7 @@ func SetupTestReconciler(inner reconcile.Reconciler) (reconcile.Reconciler, chan
 	return recFn, requests
 }
 
-func SetupTestManager(t *testing.T) manager.Manager {
+func SetupTestManager(t *testing.T) (manager.Manager, chan struct{}) {
 	// Setup the Manager and Controller.
 	mgr, err := manager.New(cfg, manager.Options{})
 
@@ -83,7 +83,14 @@ func SetupTestManager(t *testing.T) manager.Manager {
 		t.Fatalf("Error creating manager %v", err)
 	}
 
-	return mgr
+	err = addRegController(mgr, newRegistryReconcilier(mgr))
+	if err != nil {
+		t.Fatalf("Error adding Controller %v", err)
+	}
+
+	stop := StartTestManager(t, mgr)
+
+	return mgr, stop
 }
 
 // StartTestManager adds recFn

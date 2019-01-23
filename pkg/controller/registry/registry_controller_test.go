@@ -40,15 +40,9 @@ import (
 	kubicutil "github.com/kubic-project/registries-operator/pkg/util"
 )
 
-var jobKey = types.NamespacedName{
-	Name:      "kubic-registry-installer-foo-com-5000",
-	Namespace: metav1.NamespaceSystem,
-}
+var installJobName =  "kubic-registry-installer-foo-com-5000"
 
-var checkJobKey = types.NamespacedName{
-	Name:      "kubic-registry-checker-foo-com-5000",
-	Namespace: metav1.NamespaceSystem,
-}
+var checkJobName = "kubic-registry-checker-foo-com-5000"
 
 const timeout = time.Second * 60 * 1
 
@@ -80,12 +74,22 @@ func testReconcileSetup(t *testing.T, mgr manager.Manager) {
 		t.Fatalf("failed to create registry: %v", err)
 	}
 
+	//this wait is required because sometimes the registry is not
+	//found inmediatly after creating.
+	err = waitRegistryCreated(c, "foo", 10*time.Second)
+	if err != nil {
+		t.Fatalf("failed to create registry: %v", err)
+	}
 }
 
-func cleanupJob(t *testing.T, c client.Client, jobName types.NamespacedName) {
+func cleanupJob(t *testing.T, c client.Client, jobName string) {
 
 	job := &batchv1.Job{}
-	err := c.Get(context.TODO(), jobName, job)
+	nsName := types.NamespacedName{
+			Name: jobName,
+			Namespace: metav1.NamespaceSystem,
+	}
+	err := c.Get(context.TODO(), nsName, job)
 	if err == nil {
 		err = c.Delete(context.TODO(), job)
 		if err != nil && !apierrors.IsNotFound(err) {
@@ -94,44 +98,50 @@ func cleanupJob(t *testing.T, c client.Client, jobName types.NamespacedName) {
 	}
 }
 
-func testReconcileCleanup(t *testing.T, mgr manager.Manager) {
+func deleteRegistry(c client.Client, registryName string) error {
 
-	c := mgr.GetClient()
-
-	registryName := types.NamespacedName{Name: "foo"}
 	registry := &kubicv1beta1.Registry{}
+	err := c.Get(context.TODO(), types.NamespacedName{Name: registryName}, registry)
 
-	err := c.Get(context.TODO(), registryName, registry)
-
-	//Get may fail if registry wasn't created, so ignore
 	if err == nil {
 		//Ensure the finalizers are removed to prevent delete to be
 		//deadlocked by failed operator
 		registry.ObjectMeta.Finalizers = []string{}
 		err = c.Update(context.TODO(), registry)
-		if err != nil {
-			t.Logf("Error updating registry %v", err)
-		}
-
-		err = c.Delete(context.TODO(), registry)
-		if err != nil {
-			t.Logf("Error deleting registry %v", err)
+		if err == nil {
+			err = c.Delete(context.TODO(), registry)
 		}
 	}
 
-	secretName := types.NamespacedName{
-		Name:      "foo-ca-crt",
+	return err
+
+}
+
+func deleteSecret(c client.Client, secretName string) error {
+
+	nsName := types.NamespacedName{
+		Name: secretName,
 		Namespace: metav1.NamespaceSystem,
 	}
 	secret := &corev1.Secret{}
-	err = c.Get(context.TODO(), secretName, secret)
-	//Get may fail if registry wasn't created, so ignore
+	err := c.Get(context.TODO(), nsName, secret)
 	if err == nil {
 		err = c.Delete(context.TODO(), secret)
-		if err != nil {
-			t.Logf("Error deleting secret %v", err)
-		}
 	}
+
+	return err
+}
+
+func testReconcileCleanup(t *testing.T, mgr manager.Manager) {
+
+	c := mgr.GetClient()
+
+	err := deleteRegistry(c, "foo")
+	if err != nil {
+		t.Logf("Error deleting Registry %v", err)
+	}
+
+
 
 	crdName := "registries.kubic.opensuse.org"
 	crdClient, _ := clientset.NewForConfig(mgr.GetConfig())
@@ -144,12 +154,14 @@ func testReconcileCleanup(t *testing.T, mgr manager.Manager) {
 		t.Logf("Error deleting Registry CRD: %v", err)
 	}
 
-	cleanupJob(t, c, jobKey)
+	cleanupJob(t, c, installJobName)
 
-	cleanupJob(t, c, checkJobKey)
+	cleanupJob(t, c, checkJobName+"-install")
+
+	cleanupJob(t, c, checkJobName+"-remove")
 }
 
-func createCertificateCheckingJob(t *testing.T, c client.Client, regName string) (*batchv1.Job, error) {
+func createCertificateCheckingJob(t *testing.T, c client.Client, regName string, checkExist bool) (*batchv1.Job, error) {
 
 	job := &batchv1.Job{}
 
@@ -173,16 +185,26 @@ func createCertificateCheckingJob(t *testing.T, c client.Client, regName string)
 
 	dockerDstDir := filepath.Join(dockerCertsDir, registry.Spec.HostPort)
 	podmanDstDir := filepath.Join(podmanCertsDir, registry.Spec.HostPort)
-
-	cmdTemplate := "if [[ ! -f '%s/ca.crt' ]]; then echo 'cert not found at %s'; exit 1; fi "
-	commands := []string{
-		fmt.Sprintf(cmdTemplate, dockerDstDir, dockerDstDir),
-		fmt.Sprintf(cmdTemplate, podmanDstDir, podmanDstDir),
+	var checkOper string
+	var jobSuffix string
+	if checkExist {
+		checkOper = "! -f"
+		jobSuffix = "-install"
+	} else {
+		checkOper = "-f"
+		jobSuffix = "-remove"
 	}
+
+	cmdTemplate := "if [[ %s '%s/ca.crt' ]]; then echo 'Cert found at %s'; exit 1; fi "
+	commands := []string{
+		fmt.Sprintf(cmdTemplate, checkOper, dockerDstDir, dockerDstDir),
+		fmt.Sprintf(cmdTemplate, checkOper, podmanDstDir, podmanDstDir),
+	}
+
 
 	job, err = getRunnerJobWithSecrets(&runnerWithSecrets{
 		Commands:     []string{strings.Join(commands, " ; ")},
-		JobName:      checkJobKey.Name,
+		JobName:      checkJobName+jobSuffix,
 		NumNodes:     int32(numNodes),
 		JobNamespace: metav1.NamespaceSystem,
 		Secrets:      map[string]*corev1.Secret{},
@@ -227,11 +249,14 @@ func waitRegistryUpdates(c client.Client, registryName string, expected int32, t
 		err = c.Get(context.TODO(), types.NamespacedName{Name: registryName}, registry)
 		if err == nil {
 			numNodes = int32(registry.Status.Certificate.NumNodes)
-		} else if !apierrors.IsNotFound(err) {
+			return (numNodes == expected), nil
+		}
+
+		if !apierrors.IsNotFound(err) {
 			return false, err
 		}
-		err = nil
-		return (numNodes == expected), nil
+
+		return false, nil
 	})
 	return numNodes, err
 }
@@ -245,14 +270,50 @@ func waitJobCompletations(c client.Client, jobName string, expected int32, timeo
 		err = c.Get(context.TODO(), types.NamespacedName{Name: jobName, Namespace: metav1.NamespaceSystem}, job)
 		if err == nil {
 			numNodes = job.Status.Succeeded
-		} else if !apierrors.IsNotFound(err) {
+			return numNodes == expected, nil
+		}
+
+		if !apierrors.IsNotFound(err) {
 			return false, err
 		}
-		err = nil
-		return numNodes == expected, nil
+
+		return false, nil
 
 	})
 	return numNodes, err
+}
+
+func  checkReconcileJobs(t *testing.T, c client.Client, install bool, expected int32) (int32, error) {
+
+	job, err := createCertificateCheckingJob(t, c, "foo", install)
+	if err != nil {
+		t.Fatalf("Error creating certificate checking job: %v", err)
+	}
+
+	err = c.Create(context.TODO(), job)
+	if err != nil {
+		t.Fatalf("Error starting certificate checking job: %v", err)
+	}
+
+	completed, err := waitJobCompletations(c, job.Name, expected, timeout)
+
+	return completed, err
+}
+
+func removeCertificate(c client.Client) error {
+	registry := &kubicv1beta1.Registry{}
+	err := c.Get(context.TODO(), types.NamespacedName{Name: "foo"}, registry)
+
+	if err == nil {
+		//TODO: check best way to remove certificate from Registry
+		registry.Spec.Certificate =  nil 
+		err = c.Update(context.TODO(), registry)
+		if err == nil {
+			err = c.Delete(context.TODO(), registry)
+		}
+	}
+
+	return err
 }
 
 func TestReconcile(t *testing.T) {
@@ -260,48 +321,43 @@ func TestReconcile(t *testing.T) {
 	test.SkipUnlessIntegrationTesting(t)
 	g := gomega.NewGomegaWithT(t)
 
-	mgr := SetupTestManager(t)
-	c := mgr.GetClient()
+	mgr, stop := SetupTestManager(t)
 
-	//recFn, requests := SetupTestReconciler(newRegistryReconcilier(mgr))
-	//err := addRegController(mgr, recFn)
-	//to get reconcilier's requests substitute the line below by the two lines above
-	err := addRegController(mgr, newRegistryReconcilier(mgr))
-	if err != nil {
-		t.Fatalf("Error adding Controller %v", err)
-	}
-
-	defer close(StartTestManager(t, mgr))
+	defer close(stop)
 
 	testReconcileSetup(t, mgr)
 
-	//this wait is required because sometimes the registry is not
-	//found inmediatly after creating.
-	err = waitRegistryCreated(c, "foo", 10*time.Second)
-	if err != nil {
-		t.Fatalf("failed to create registry: %v", err)
-	}
-
 	defer testReconcileCleanup(t, mgr)
 
-	job, err := createCertificateCheckingJob(t, c, "foo")
+	c := mgr.GetClient()
+
+	nodes, err  := getAllNodes(c)
 	if err != nil {
-		t.Fatalf("Error creating certificate checking job: %v", err)
+		t.Fatalf("Error getting list of nodes %v", err)
+	}
+	expected := int32(len(nodes))
+
+	updates, err := waitRegistryUpdates(c, "foo", expected, timeout)
+	if err != nil {
+		t.Fatalf("Error waiting for certificates intalls: %v", err)
+	}
+	if updates != expected {
+		t.Fatalf("Error waiting for registry installs. Expected: %d Actual: %d", expected, updates)
 	}
 
-	numNodes := job.Spec.Completions
+    completed, err := checkReconcileJobs(t, c, true, expected)
 
-	updates, err := waitRegistryUpdates(c, "foo", *numNodes, timeout)
 	g.Expect(err).ShouldNot(gomega.HaveOccurred())
-	g.Expect(updates).Should(gomega.Equal(*numNodes))
+	g.Expect(completed).Should(gomega.Equal(expected))
 
-	err = c.Create(context.TODO(), job)
+	err = deleteSecret(c, "foo-ca-crt")
 	if err != nil {
-		t.Fatalf("Error starting certificate checking job: %v", err)
+		t.Fatalf("Error removing certificate: %v", err)
 	}
 
-	completed, err := waitJobCompletations(c, job.Name, *numNodes, timeout)
-	g.Expect(err).ShouldNot(gomega.HaveOccurred())
-	g.Expect(completed).Should(gomega.Equal(*numNodes))
+	completed, err = checkReconcileJobs(t, c, false, expected)
 
+	g.Expect(err).ShouldNot(gomega.HaveOccurred())
+	g.Expect(completed).Should(gomega.Equal(expected))
 }
+
