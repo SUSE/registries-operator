@@ -19,35 +19,34 @@ package registry
 
 import (
 	"fmt"
-	"path/filepath"
-	"strings"
-	"testing"
-	"time"
 	"github.com/onsi/gomega"
 	"golang.org/x/net/context"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"path/filepath"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"strings"
+	"testing"
+	"time"
 
 	kubicv1beta1 "github.com/kubic-project/registries-operator/pkg/apis/kubic/v1beta1"
-	kubicutil "github.com/kubic-project/registries-operator/pkg/util"
 	"github.com/kubic-project/registries-operator/pkg/test"
+	kubicutil "github.com/kubic-project/registries-operator/pkg/util"
 )
 
-
 var jobKey = types.NamespacedName{
-	Name: "kubic-registry-installer-foo-com-5000",
+	Name:      "kubic-registry-installer-foo-com-5000",
 	Namespace: metav1.NamespaceSystem,
 }
 
-var checkJobKey = types.NamespacedName {
-	Name: "kubic-registry-checker-foo-com-5000",
+var checkJobKey = types.NamespacedName{
+	Name:      "kubic-registry-checker-foo-com-5000",
 	Namespace: metav1.NamespaceSystem,
 }
 
@@ -88,14 +87,14 @@ func cleanupJob(t *testing.T, c client.Client, jobName types.NamespacedName) {
 	job := &batchv1.Job{}
 	err := c.Get(context.TODO(), jobName, job)
 	if err == nil {
-		err = c.Delete(context.TODO(),job)
+		err = c.Delete(context.TODO(), job)
 		if err != nil && !apierrors.IsNotFound(err) {
-		  t.Logf("Error deleting job %v", err)
+			t.Logf("Error deleting job %v", err)
 		}
 	}
 }
 
-func testReconcileCleanup(t *testing.T, mgr manager.Manager){
+func testReconcileCleanup(t *testing.T, mgr manager.Manager) {
 
 	c := mgr.GetClient()
 
@@ -109,9 +108,9 @@ func testReconcileCleanup(t *testing.T, mgr manager.Manager){
 		//Ensure the finalizers are removed to prevent delete to be
 		//deadlocked by failed operator
 		registry.ObjectMeta.Finalizers = []string{}
-		err  = c.Update(context.TODO(), registry)
+		err = c.Update(context.TODO(), registry)
 		if err != nil {
-		  t.Logf("Error updating registry %v", err)
+			t.Logf("Error updating registry %v", err)
 		}
 
 		err = c.Delete(context.TODO(), registry)
@@ -121,16 +120,16 @@ func testReconcileCleanup(t *testing.T, mgr manager.Manager){
 	}
 
 	secretName := types.NamespacedName{
-		Name: "foo-ca-crt",
+		Name:      "foo-ca-crt",
 		Namespace: metav1.NamespaceSystem,
 	}
 	secret := &corev1.Secret{}
-	err = c.Get(context.TODO(),secretName, secret)
+	err = c.Get(context.TODO(), secretName, secret)
 	//Get may fail if registry wasn't created, so ignore
 	if err == nil {
-		err = c.Delete(context.TODO(),secret)
+		err = c.Delete(context.TODO(), secret)
 		if err != nil {
-		  t.Logf("Error deleting secret %v", err)
+			t.Logf("Error deleting secret %v", err)
 		}
 	}
 
@@ -138,8 +137,8 @@ func testReconcileCleanup(t *testing.T, mgr manager.Manager){
 	crdClient, _ := clientset.NewForConfig(mgr.GetConfig())
 
 	err = crdClient.ApiextensionsV1beta1().
-	                CustomResourceDefinitions().
-		        Delete(crdName, &metav1.DeleteOptions{})
+		CustomResourceDefinitions().
+		Delete(crdName, &metav1.DeleteOptions{})
 
 	if err != nil {
 		t.Logf("Error deleting Registry CRD: %v", err)
@@ -149,7 +148,6 @@ func testReconcileCleanup(t *testing.T, mgr manager.Manager){
 
 	cleanupJob(t, c, checkJobKey)
 }
-
 
 func createCertificateCheckingJob(t *testing.T, c client.Client, regName string) (*batchv1.Job, error) {
 
@@ -171,15 +169,15 @@ func createCertificateCheckingJob(t *testing.T, c client.Client, regName string)
 	if err != nil {
 		return job, err
 	}
-	numNodes:= len(nodes)
+	numNodes := len(nodes)
 
 	dockerDstDir := filepath.Join(dockerCertsDir, registry.Spec.HostPort)
 	podmanDstDir := filepath.Join(podmanCertsDir, registry.Spec.HostPort)
 
 	cmdTemplate := "if [[ ! -f '%s/ca.crt' ]]; then echo 'cert not found at %s'; exit 1; fi "
-	commands := []string {
+	commands := []string{
 		fmt.Sprintf(cmdTemplate, dockerDstDir, dockerDstDir),
-		fmt.Sprintf(cmdTemplate,podmanDstDir, podmanDstDir),
+		fmt.Sprintf(cmdTemplate, podmanDstDir, podmanDstDir),
 	}
 
 	job, err = getRunnerJobWithSecrets(&runnerWithSecrets{
@@ -187,8 +185,7 @@ func createCertificateCheckingJob(t *testing.T, c client.Client, regName string)
 		JobName:      checkJobKey.Name,
 		NumNodes:     int32(numNodes),
 		JobNamespace: metav1.NamespaceSystem,
-		Secrets: map[string]*corev1.Secret{
-		},
+		Secrets:      map[string]*corev1.Secret{},
 		Labels: map[string]string{
 			jobInstallLabelHostPort: registryAddress,
 			jobInstallLabelHash:     getSecretHash(secret),
@@ -202,10 +199,10 @@ func createCertificateCheckingJob(t *testing.T, c client.Client, regName string)
 		},
 	})
 
-		return job, err
+	return job, err
 }
 
-func waitRegistryCreated(c client.Client, registryName string, timeout time.Duration) error{
+func waitRegistryCreated(c client.Client, registryName string, timeout time.Duration) error {
 
 	registry := &kubicv1beta1.Registry{}
 	var err error
@@ -221,7 +218,7 @@ func waitRegistryCreated(c client.Client, registryName string, timeout time.Dura
 	return err
 }
 
-func waitRegistryUpdates(c client.Client, registryName string, expected int32, timeout time.Duration) (int32, error){
+func waitRegistryUpdates(c client.Client, registryName string, expected int32, timeout time.Duration) (int32, error) {
 
 	registry := &kubicv1beta1.Registry{}
 	numNodes := int32(-1)
@@ -239,7 +236,7 @@ func waitRegistryUpdates(c client.Client, registryName string, expected int32, t
 	return numNodes, err
 }
 
-func waitJobCompletations(c client.Client, jobName string, expected int32, timeout time.Duration) (int32, error){
+func waitJobCompletations(c client.Client, jobName string, expected int32, timeout time.Duration) (int32, error) {
 
 	job := &batchv1.Job{}
 	numNodes := int32(0)
@@ -248,7 +245,7 @@ func waitJobCompletations(c client.Client, jobName string, expected int32, timeo
 		err = c.Get(context.TODO(), types.NamespacedName{Name: jobName, Namespace: metav1.NamespaceSystem}, job)
 		if err == nil {
 			numNodes = job.Status.Succeeded
-		} else	if !apierrors.IsNotFound(err) {
+		} else if !apierrors.IsNotFound(err) {
 			return false, err
 		}
 		err = nil
@@ -258,10 +255,7 @@ func waitJobCompletations(c client.Client, jobName string, expected int32, timeo
 	return numNodes, err
 }
 
-
 func TestReconcile(t *testing.T) {
-
-	var err error
 
 	test.SkipUnlessIntegrationTesting(t)
 	g := gomega.NewGomegaWithT(t)
@@ -272,7 +266,7 @@ func TestReconcile(t *testing.T) {
 	//recFn, requests := SetupTestReconciler(newRegistryReconcilier(mgr))
 	//err := addRegController(mgr, recFn)
 	//to get reconcilier's requests substitute the line below by the two lines above
-	err = addRegController(mgr,newRegistryReconcilier(mgr))
+	err := addRegController(mgr, newRegistryReconcilier(mgr))
 	if err != nil {
 		t.Fatalf("Error adding Controller %v", err)
 	}
@@ -282,8 +276,8 @@ func TestReconcile(t *testing.T) {
 	testReconcileSetup(t, mgr)
 
 	//this wait is required because sometimes the registry is not
-	//found inmediatly after creating. 
-	err = waitRegistryCreated(c, "foo",10*time.Second)
+	//found inmediatly after creating.
+	err = waitRegistryCreated(c, "foo", 10*time.Second)
 	if err != nil {
 		t.Fatalf("failed to create registry: %v", err)
 	}
@@ -297,7 +291,7 @@ func TestReconcile(t *testing.T) {
 
 	numNodes := job.Spec.Completions
 
-	updates, err := waitRegistryUpdates(c, "foo",*numNodes, timeout)
+	updates, err := waitRegistryUpdates(c, "foo", *numNodes, timeout)
 	g.Expect(err).ShouldNot(gomega.HaveOccurred())
 	g.Expect(updates).Should(gomega.Equal(*numNodes))
 
@@ -306,9 +300,8 @@ func TestReconcile(t *testing.T) {
 		t.Fatalf("Error starting certificate checking job: %v", err)
 	}
 
-	completed, err := waitJobCompletations(c,job.Name, *numNodes, timeout)
+	completed, err := waitJobCompletations(c, job.Name, *numNodes, timeout)
 	g.Expect(err).ShouldNot(gomega.HaveOccurred())
 	g.Expect(completed).Should(gomega.Equal(*numNodes))
 
 }
-
