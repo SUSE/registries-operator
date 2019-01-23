@@ -112,12 +112,11 @@ func testReconcileCleanup(t *testing.T, mgr manager.Manager){
 		err  = c.Update(context.TODO(), registry)
 		if err != nil {
 		  t.Logf("Error updating registry %v", err)
-		} else {
+		}
 
-			err = c.Delete(context.TODO(), registry)
-			if err != nil {
-			  t.Logf("Error deleting registry %v", err)
-			}
+		err = c.Delete(context.TODO(), registry)
+		if err != nil {
+			t.Logf("Error deleting registry %v", err)
 		}
 	}
 

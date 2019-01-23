@@ -36,7 +36,6 @@ import (
 var cfg *rest.Config
 
 func TestMain(m *testing.M) {
-
 	var t *envtest.Environment
 
 	useExistingCluster := os.Getenv("KUBECONFIG") != ""
@@ -66,7 +65,6 @@ func TestMain(m *testing.M) {
 // SetupTestReconcile returns a reconcile.Reconcile implementation that delegates to inner and
 // writes the request to requests after Reconcile is finished.
 func SetupTestReconciler(inner reconcile.Reconciler) (reconcile.Reconciler, chan reconcile.Request) {
-
 	requests := make(chan reconcile.Request)
 	recFn := reconcile.Func(func(req reconcile.Request) (reconcile.Result, error) {
 		result, err := inner.Reconcile(req)
@@ -77,16 +75,15 @@ func SetupTestReconciler(inner reconcile.Reconciler) (reconcile.Reconciler, chan
 	return recFn, requests
 }
 
-func  SetupTestManager(t *testing.T) manager.Manager {
-
-	// Setup the Manager and Controller.  
+func SetupTestManager(t *testing.T) manager.Manager {
+	// Setup the Manager and Controller.
 	mgr, err := manager.New(cfg, manager.Options{})
 
 	if err != nil {
-		t.Errorf("Error creating manager %v", err)
+		t.Fatalf("Error creating manager %v", err)
 	}
 
-	return  mgr
+	return mgr
 }
 
 // StartTestManager adds recFn
