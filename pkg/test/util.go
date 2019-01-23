@@ -19,6 +19,7 @@
 package test
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/kubic-project/registries-operator/pkg/test/assets"
@@ -50,9 +51,22 @@ func BuildSecretFromCert(name string, certName string) (*corev1.Secret, error) {
 	}
 
 	secret := &corev1.Secret{
-		Type: corev1.SecretTypeOpaque, ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"}, Data: map[string][]byte{"ca.crt": cert}}
+		Type: corev1.SecretTypeOpaque,
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+			Namespace: metav1.NamespaceSystem,
+		},
+		Data: map[string][]byte{"ca.crt": cert}}
 
 	return secret, nil
 }
 
 
+// Prints Object is a readable format
+func PrettyPrint(v interface{}) (err error) {
+      b, err := json.MarshalIndent(v, "", "  ")
+      if err == nil {
+              fmt.Println(string(b))
+      }
+      return err
+}
